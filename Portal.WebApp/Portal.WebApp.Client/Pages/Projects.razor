@@ -1,0 +1,413 @@
+@page "/projects"
+@rendermode InteractiveAuto
+@attribute [Authorize]
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Portal.DTOs.Projects
+@using Portal.DTOs.Notes
+@using Portal.DTOs.Reminders
+@inject HttpClient Http
+
+<PageTitle>Projecten - Portal Dashboard</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold m-0">Projecten Dashboard</h2>
+        <p class="text-muted m-0">Beheer je projecten, gekoppelde notities en herinneringen</p>
+    </div>
+    <button type="button" class="btn btn-primary" @onclick="OpenNewProjectModal">
+        <span>+ Nieuw Project</span>
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span>@_errorMessage</span>
+        <button type="button" class="btn-close" @onclick="ClearErrorMessage"></button>
+    </div>
+}
+
+@if (_isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Projecten laden uit API...</p>
+    </div>
+}
+else if (_projects == null || !_projects.Any())
+{
+    <div class="card card-body text-center py-5 border-dashed">
+        <h5 class="text-muted">Nog geen projecten aanwezig</h5>
+        <p class="text-muted small">Maak je eerste project aan om te beginnen.</p>
+        <div>
+            <button type="button" class="btn btn-outline-primary btn-sm" @onclick="OpenNewProjectModal">
+                <span>Project Toevoegen</span>
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var project in _projects)
+        {
+            <div class="col-lg-6">
+                <div class="card h-100 shadow-sm border-0 bg-light-subtle">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <h5 class="card-title fw-bold m-0 text-primary">@project.Title</h5>
+                        <small class="text-muted">@project.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</small>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-secondary">@project.Description</p>
+
+                        @if (!string.IsNullOrWhiteSpace(project.RepositoryUrl))
+                        {
+                            <div class="mb-3">
+                                <a href="@project.RepositoryUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <span>Repository Bekijken</span>
+                                </a>
+                            </div>
+                        }
+
+                        <!-- NOTITIES -->
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-uppercase text-muted small m-0">Notities (@project.Notes.Count)</h6>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" @onclick="() => OpenAddNoteModal(project.Id)">
+                                    <span>+ Notitie</span>
+                                </button>
+                            </div>
+                            @if (project.Notes.Any())
+                            {
+                                <div class="list-group list-group-flush rounded border mb-2">
+                                    @foreach (var note in project.Notes)
+                                    {
+                                        <div class="list-group-item bg-white">
+                                            <div class="fw-semibold">@note.Title</div>
+                                            <div class="small text-secondary">@note.Content</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted small fst-italic">Geen gekoppelde notities.</p>
+                            }
+                        </div>
+
+                        <!-- REMINDERS -->
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-uppercase text-muted small m-0">Herinneringen (@project.Reminders.Count)</h6>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" @onclick="() => OpenAddReminderModal(project.Id)">
+                                    <span>+ Herinnering</span>
+                                </button>
+                            </div>
+                            @if (project.Reminders.Any())
+                            {
+                                <div class="list-group list-group-flush rounded border">
+                                    @foreach (var reminder in project.Reminders)
+                                    {
+                                        <div class="list-group-item bg-white d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <span class="@(reminder.IsCompleted ? "text-decoration-line-through text-muted" : "fw-semibold")">
+                                                    @reminder.Title
+                                                </span>
+                                                @if (reminder.DueDate != default)
+                                                {
+                                                    <div class="small text-muted">
+                                                        Deadline: @reminder.DueDate.ToLocalTime().ToString("dd MMM HH:mm")
+                                                    </div>
+                                                }
+                                            </div>
+                                            <button type="button" class="btn btn-sm @(reminder.IsCompleted ? "btn-success" : "btn-outline-secondary")"
+                                                    @onclick="() => ToggleReminder(reminder)">
+                                                <span>@(reminder.IsCompleted ? "Voltooid" : "Aanvinken")</span>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted small fst-italic">Geen actieve herinneringen.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- NIEUW PROJECT MODAL -->
+@if (_showNewProjectModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nieuw Project Aanmaken</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titel</label>
+                        <input type="text" class="form-control" placeholder="bijv. Portal Dashboard" @bind="_newProject.Title" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Beschrijving</label>
+                        <textarea class="form-control" rows="3" @bind="_newProject.Description"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Repository URL (Optioneel)</label>
+                        <input type="text" class="form-control" placeholder="https://github.com/..." @bind="_newProject.RepositoryUrl" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateProject">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- NIEUWE NOTITIE MODAL -->
+@if (_selectedProjectIdForNote != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Notitie Toevoegen</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titel</label>
+                        <input type="text" class="form-control" @bind="_newNote.Title" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Inhoud</label>
+                        <textarea class="form-control" rows="4" @bind="_newNote.Content"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateNote">Toevoegen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- NIEUWE REMINDER MODAL -->
+@if (_selectedProjectIdForReminder != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Herinnering Toevoegen</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titel</label>
+                        <input type="text" class="form-control" @bind="_newReminder.Title" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Beschrijving</label>
+                        <input type="text" class="form-control" @bind="_newReminder.Description" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deadline</label>
+                        <input type="datetime-local" class="form-control" @bind="_newReminderDueDate" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateReminder">Toevoegen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ProjectDto>? _projects;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    private bool _showNewProjectModal;
+    private Guid? _selectedProjectIdForNote;
+    private Guid? _selectedProjectIdForReminder;
+
+    private CreateProjectDto _newProject = new();
+    private CreateNoteDto _newNote = new();
+    private CreateReminderDto _newReminder = new();
+    private DateTime _newReminderDueDate = DateTime.Now.AddDays(1);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjects();
+    }
+
+    private async Task LoadProjects()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _projects = await Http.GetFromJsonAsync<List<ProjectDto>>("api/project");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij laden van projecten: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenNewProjectModal()
+    {
+        _showNewProjectModal = true;
+    }
+
+    private void ClearErrorMessage()
+    {
+        _errorMessage = null;
+    }
+
+    private void CloseModals()
+    {
+        _showNewProjectModal = false;
+        _selectedProjectIdForNote = null;
+        _selectedProjectIdForReminder = null;
+    }
+
+    private async Task CreateProject()
+    {
+        if (string.IsNullOrWhiteSpace(_newProject.Title))
+        {
+            _errorMessage = "Voer een titel in voor het project.";
+            return;
+        }
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/project", _newProject);
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModals();
+                _newProject = new CreateProjectDto();
+                await LoadProjects();
+            }
+            else
+            {
+                _errorMessage = "Project kon niet worden aangemaakt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij aanmaken project: {ex.Message}";
+        }
+    }
+
+    private void OpenAddNoteModal(Guid projectId)
+    {
+        _selectedProjectIdForNote = projectId;
+        _newNote = new CreateNoteDto { ProjectId = projectId };
+    }
+
+    private async Task CreateNote()
+    {
+        if (_selectedProjectIdForNote == null) return;
+
+        if (string.IsNullOrWhiteSpace(_newNote.Title))
+        {
+            _errorMessage = "Voer een titel in voor de notitie.";
+            return;
+        }
+
+        try
+        {
+            // Corrigeer route naar de NotesController: api/notes
+            var response = await Http.PostAsJsonAsync("api/notes", _newNote);
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModals();
+                await LoadProjects();
+            }
+            else
+            {
+                _errorMessage = "Notitie kon niet worden opgeslagen.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij toevoegen notitie: {ex.Message}";
+        }
+    }
+
+    private void OpenAddReminderModal(Guid projectId)
+    {
+        _selectedProjectIdForReminder = projectId;
+        _newReminder = new CreateReminderDto { ProjectId = projectId };
+        _newReminderDueDate = DateTime.Now.AddDays(1);
+    }
+
+    private async Task CreateReminder()
+    {
+        if (_selectedProjectIdForReminder == null) return;
+
+        if (string.IsNullOrWhiteSpace(_newReminder.Title))
+        {
+            _errorMessage = "Voer een titel in voor de herinnering.";
+            return;
+        }
+
+        _newReminder.DueDate = _newReminderDueDate;
+
+        try
+        {
+            // Corrigeer route naar de RemindersController: api/reminders
+            var response = await Http.PostAsJsonAsync("api/reminders", _newReminder);
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModals();
+                await LoadProjects();
+            }
+            else
+            {
+                _errorMessage = "Herinnering kon niet worden opgeslagen.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij toevoegen herinnering: {ex.Message}";
+        }
+    }
+
+    private async Task ToggleReminder(ReminderDto reminder)
+    {
+        try
+        {
+            var response = await Http.PatchAsync($"api/reminders/{reminder.Id}/toggle", null);
+            if (response.IsSuccessStatusCode)
+            {
+                reminder.IsCompleted = !reminder.IsCompleted;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij bijwerken status: {ex.Message}";
+        }
+    }
+}

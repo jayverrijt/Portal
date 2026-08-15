@@ -1,0 +1,7 @@
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI2MWE0YzU0Ni01YzRiLTRmZWYtYmM4Ny1kODcxMmQ3NDVjNzYiLCJlbWFpbCI6ImpheXZAZmFtdmVycmlqdC5ubCIsInVuaXF1ZV9uYW1lIjoiamF5dkBmYW12ZXJyaWp0Lm5sIiwibmJmIjoxNzg2MDQyNDYzLCJleHAiOjE3ODY2NDcyNjMsImlhdCI6MTc4NjA0MjQ2MywiaXNzIjoiUG9ydGFsLkFQSSIsImF1ZCI6IlBvcnRhbC5DbGllbnQifQ.dIu0iKuFs4cSKmUBZQNzuopWq7HudQDfeRY-E9TqnHU
+@Portal.API_HostAddress = http://localhost:5190
+
+GET {{Portal.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

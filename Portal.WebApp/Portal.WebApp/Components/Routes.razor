@@ -1,0 +1,42 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Portal.WebApp.Client
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(Portal.WebApp.Client._Imports).Assembly }">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <Authorizing>
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Sessie verifiëren...</p>
+                    </div>
+                </Authorizing>
+                <NotAuthorized>
+                    <div class="container mt-5">
+                        <div class="row justify-content-center">
+                            <div class="col-md-6 text-center">
+                                <div class="card shadow-sm p-4">
+                                    <h4 class="text-danger mb-3">Toegang geweigerd</h4>
+                                    <p class="text-muted">Je dient ingelogd te zijn om deze pagina te bekijken.</p>
+                                    <div class="mt-3">
+                                        <a href="login" class="btn btn-primary">Ga naar Inloggen</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="typeof(Layout.MainLayout)">
+                <div class="container mt-5 text-center">
+                    <h3>Pagina niet gevonden</h3>
+                    <p class="text-muted">De opgevraagde pagina bestaat niet.</p>
+                    <a href="" class="btn btn-outline-primary">Terug naar Home</a>
+                </div>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

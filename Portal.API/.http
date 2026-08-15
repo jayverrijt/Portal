@@ -1,0 +1,174 @@
+@Portal.API_HostAddress = https://localhost:7001
+@authToken = YOUR_JWT_TOKEN_HERE
+@projectId = 00000000-0000-0000-0000-000000000000
+@noteId = 00000000-0000-0000-0000-000000000000
+@reminderId = 00000000-0000-0000-0000-000000000000
+@taskId = 00000000-0000-0000-0000-000000000000
+
+### ==========================================
+### 1. AUTHENTICATIE ENDPOINTS
+### ==========================================
+
+### Registreer een nieuwe gebruiker
+POST {{Portal.API_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@portal.local",
+  "password": "Password123!",
+  "firstName": "Second",
+  "lastName": "Brain"
+}
+
+### Login (Kopieer de 'token' uit de response naar @authToken bovenaan dit bestand)
+POST {{Portal.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@portal.local",
+  "password": "Password123!"
+}
+
+
+### ==========================================
+### 2. PROJECT MANAGEMENT ENDPOINTS
+### ==========================================
+
+### Haal alle projecten op
+GET {{Portal.API_HostAddress}}/api/project
+Authorization: Bearer {{authToken}}
+
+### Maak een nieuw project aan
+POST {{Portal.API_HostAddress}}/api/project
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Portal Second Brain Core",
+  "description": "De centrale backend service gebouwd in .NET 8 en MySQL.",
+  "repositoryUrl": "https://github.com/example/portal-backend"
+}
+
+### Haal specifiek project op (inclusief notities en reminders)
+GET {{Portal.API_HostAddress}}/api/project/{{projectId}}
+Authorization: Bearer {{authToken}}
+
+### Voeg direct een Notitie toe aan een Project
+POST {{Portal.API_HostAddress}}/api/project/{{projectId}}/notes
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Architectuur Besluiten",
+  "content": "Drie-lagen structuur gebruikt: Portal, Portal.Data en Portal.API met JWT Auth."
+}
+
+### Voeg direct een Reminder toe aan een Project
+POST {{Portal.API_HostAddress}}/api/project/{{projectId}}/reminders
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Code Review & Refactoring",
+  "description": "Controleer de repository interfaces op SOLID principes.",
+  "dueDate": "2026-08-15T12:00:00Z"
+}
+
+### Verwijder een Project
+DELETE {{Portal.API_HostAddress}}/api/project/{{projectId}}
+Authorization: Bearer {{authToken}}
+
+
+### ==========================================
+### 3. NOTITIES ENDPOINTS (LOS OF GEKOPPELD)
+### ==========================================
+
+### Haal alle notities op (Optioneel: filteren met ?projectId=...)
+GET {{Portal.API_HostAddress}}/api/notes
+Authorization: Bearer {{authToken}}
+
+### Maak een losse notitie aan (ProjectId = null)
+POST {{Portal.API_HostAddress}}/api/notes
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Idee voor een nieuwe module",
+  "content": "Overwegen om in de toekomst een gewoontetracker of budgetmodule toe te voegen.",
+  "projectId": null
+}
+
+### Haal specifieke notitie op
+GET {{Portal.API_HostAddress}}/api/notes/{{noteId}}
+Authorization: Bearer {{authToken}}
+
+### Update een notitie
+PUT {{Portal.API_HostAddress}}/api/notes/{{noteId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Gewoontetracker idee uitgewerkt",
+  "content": "Zou kunnen werken op basis van dagelijkse scheduled tasks.",
+  "projectId": null
+}
+
+### Verwijder een notitie
+DELETE {{Portal.API_HostAddress}}/api/notes/{{noteId}}
+Authorization: Bearer {{authToken}}
+
+
+### ==========================================
+### 4. REMINDERS ENDPOINTS (LOS OF GEKOPPELD)
+### ==========================================
+
+### Haal alle reminders op (Filteren: ?projectId=...&isCompleted=false)
+GET {{Portal.API_HostAddress}}/api/reminders
+Authorization: Bearer {{authToken}}
+
+### Maak een losse reminder aan
+POST {{Portal.API_HostAddress}}/api/reminders
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Server back-up maken",
+  "description": "Check de MySQL dumps op de host machine.",
+  "dueDate": "2026-08-10T20:00:00Z",
+  "projectId": null
+}
+
+### Toggle Reminder voltooid-status (PATCH)
+PATCH {{Portal.API_HostAddress}}/api/reminders/{{reminderId}}/toggle
+Authorization: Bearer {{authToken}}
+
+### Verwijder een reminder
+DELETE {{Portal.API_HostAddress}}/api/reminders/{{reminderId}}
+Authorization: Bearer {{authToken}}
+
+
+### ==========================================
+### 5. SCHEDULED TASKS ENDPOINTS
+### ==========================================
+
+### Haal alle geplande taken op
+GET {{Portal.API_HostAddress}}/api/scheduledtasks
+Authorization: Bearer {{authToken}}
+
+### Maak een nieuwe geplande taak aan (bijv. Elke dag om 08:00 UTC)
+POST {{Portal.API_HostAddress}}/api/scheduledtasks
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Dagelijkse Herinneringen Synchronisatie",
+  "cronExpression": "0 8 * * *"
+}
+
+### Toggle Scheduled Task actief/inactief
+PATCH {{Portal.API_HostAddress}}/api/scheduledtasks/{{taskId}}/toggle
+Authorization: Bearer {{authToken}}
+
+### Verwijder een geplande taak
+DELETE {{Portal.API_HostAddress}}/api/scheduledtasks/{{taskId}}
+Authorization: Bearer {{authToken}}
