@@ -5,13 +5,15 @@
 
 @if (IsOpen)
 {
-    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.6); z-index: 1050;">
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1050;">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content shadow-lg border-0">
-                <div class="modal-header bg-light d-flex justify-content-between align-items-center">
+            <div class="modal-content border-nord shadow-lg">
+                <div class="modal-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="modal-title fw-bold m-0 text-primary">Aantekeningen: @Project?.Title</h5>
-                        <small class="text-muted">Notities en documentatie beheren</small>
+                        <h5 class="modal-title fw-bold m-0 text-nord-snow">
+                            <i class="fa-solid fa-file-pen text-nord-yellow me-2"></i>Aantekeningen: @Project?.Title
+                        </h5>
+                        <small class="text-nord-dim">Notities en documentatie beheren</small>
                     </div>
                     <button type="button" class="btn-close" @onclick="Close"></button>
                 </div>
@@ -26,18 +28,18 @@
 
                     <div class="row g-0" style="min-height: 520px;">
                         <!-- LINKER LIJST: OVERZICHT NOTITIES -->
-                        <div class="col-md-4 border-end p-3 bg-light-subtle d-flex flex-column">
+                        <div class="col-md-4 border-end border-nord p-3 bg-nord-dark d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="fw-semibold small text-uppercase text-muted">Notities (@(Notes?.Count ?? 0))</span>
+                                <span class="fw-semibold small text-uppercase text-nord-dim">Notities (@(Notes?.Count ?? 0))</span>
                                 <button type="button" class="btn btn-sm btn-primary" @onclick="StartNewNote">
-                                    <span>+ Nieuw</span>
+                                    <i class="fa-solid fa-plus me-1"></i> Nieuw
                                 </button>
                             </div>
 
                             <div class="flex-grow-1 overflow-y-auto" style="max-height: 440px;">
                                 @if (Notes == null || !Notes.Any())
                                 {
-                                    <div class="p-3 text-center text-muted fst-italic">
+                                    <div class="p-3 text-center text-nord-dim fst-italic">
                                         Geen notities gekoppeld aan dit project.
                                     </div>
                                 }
@@ -47,11 +49,12 @@
                                         @foreach (var note in Notes)
                                         {
                                             <button type="button"
-                                                    class="list-group-item list-group-item-action text-start p-3 rounded border @(_selectedNote?.Id == note.Id ? "border-primary bg-white shadow-sm" : "bg-white")"
+                                                    class="list-group-item list-group-item-action text-start p-3 rounded border @(_selectedNote?.Id == note.Id ? "border-primary bg-nord-surface text-white" : "border-nord bg-nord-card text-nord-snow")"
+                                                    style="@(_selectedNote?.Id == note.Id ? "background-color: var(--nord2); border-color: var(--nord8) !important;" : "background-color: var(--nord1);")"
                                                     @onclick="() => SelectNote(note)">
-                                                <div class="fw-bold text-truncate">@note.Title</div>
-                                                <div class="small text-muted text-truncate">@(string.IsNullOrWhiteSpace(note.Content) ? "(Leeg)" : note.Content)</div>
-                                                <div class="text-muted mt-1" style="font-size: 0.75rem;">
+                                                <div class="fw-bold text-truncate text-nord-snow">@note.Title</div>
+                                                <div class="small text-nord-dim text-truncate">@(string.IsNullOrWhiteSpace(note.Content) ? "(Leeg)" : note.Content)</div>
+                                                <div class="text-nord-dim mt-1" style="font-size: 0.75rem;">
                                                     @note.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
                                                 </div>
                                             </button>
@@ -62,24 +65,24 @@
                         </div>
 
                         <!-- RECHTER PANEEL: EDITOR -->
-                        <div class="col-md-8 p-4 bg-white d-flex flex-column">
+                        <div class="col-md-8 p-4 bg-nord-main d-flex flex-column">
                             @if (_isEditing || _isCreating)
                             {
                                 <div class="mb-3">
-                                    <label class="form-label fw-semibold">Titel</label>
+                                    <label class="form-label">Titel</label>
                                     <input type="text" class="form-control form-control-lg fw-bold" placeholder="Titel van aantekening..." @bind="_activeTitle" />
                                 </div>
 
                                 <div class="mb-3 flex-grow-1 d-flex flex-column">
-                                    <label class="form-label fw-semibold">Inhoud (Aantekeningen / Snippets)</label>
-                                    <textarea class="form-control flex-grow-1 font-monospace" style="min-height: 280px; resize: vertical;" placeholder="Schrijf hier je notitie..." @bind="_activeContent"></textarea>
+                                    <label class="form-label">Inhoud (Markdown / Code)</label>
+                                    <textarea class="form-control flex-grow-1 font-monospace" style="min-height: 280px; resize: vertical;" placeholder="Schrijf hier je notities..." @bind="_activeContent"></textarea>
                                 </div>
 
-                                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                                <div class="d-flex justify-content-between align-items-center pt-3 border-top border-nord">
                                     @if (_isEditing && _selectedNote != null)
                                     {
                                         <button type="button" class="btn btn-outline-danger btn-sm" @onclick="DeleteCurrentNote" disabled="@_isSaving">
-                                            <span>Verwijderen</span>
+                                            <i class="fa-solid fa-trash me-1"></i> Verwijderen
                                         </button>
                                     }
                                     else
@@ -94,18 +97,19 @@
                                             {
                                                 <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                                             }
-                                            <span>Opslaan</span>
+                                            Opslaan
                                         </button>
                                     </div>
                                 </div>
                             }
                             else
                             {
-                                <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted text-center py-5">
+                                <div class="h-100 d-flex flex-column align-items-center justify-content-center text-nord-dim text-center py-5">
+                                    <i class="fa-regular fa-note-sticky fa-3x mb-3 text-nord-dim"></i>
                                     <h5>Geen notitie geselecteerd</h5>
                                     <p class="small">Kies links een bestaande notitie of maak direct een nieuwe aan.</p>
-                                    <button type="button" class="btn btn-outline-primary btn-sm" @onclick="StartNewNote">
-                                        <span>Nieuwe Notitie Aanmaken</span>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="StartNewNote">
+                                        <i class="fa-solid fa-plus me-1"></i> Nieuwe Notitie Aanmaken
                                     </button>
                                 </div>
                             }
@@ -165,7 +169,7 @@
     {
         if (string.IsNullOrWhiteSpace(_activeTitle) || Project == null)
         {
-            _errorMessage = "Voer minimaal een titel in.";
+            _errorMessage = "Voer minimaal een titel in voor de notitie.";
             return;
         }
 
@@ -186,17 +190,12 @@
                 var response = await Http.PostAsJsonAsync("api/notes", newNote);
                 if (response.IsSuccessStatusCode)
                 {
-                    var created = await response.Content.ReadFromJsonAsync<NoteDto>();
-                    if (created != null)
-                    {
-                        Notes.Add(created);
-                        SelectNote(created);
-                    }
                     await OnNotesUpdated.InvokeAsync();
+                    CancelEdit();
                 }
                 else
                 {
-                    _errorMessage = "Kon notitie niet aanmaken.";
+                    _errorMessage = "Kon notitie niet aanmaken via de server.";
                 }
             }
             else if (_isEditing && _selectedNote != null)
@@ -211,13 +210,8 @@
                 var response = await Http.PutAsJsonAsync($"api/notes/{_selectedNote.Id}", updateDto);
                 if (response.IsSuccessStatusCode)
                 {
-                    var updated = await response.Content.ReadFromJsonAsync<NoteDto>();
-                    if (updated != null)
-                    {
-                        _selectedNote.Title = updated.Title;
-                        _selectedNote.Content = updated.Content;
-                    }
                     await OnNotesUpdated.InvokeAsync();
+                    CancelEdit();
                 }
                 else
                 {
@@ -227,7 +221,7 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Fout: {ex.Message}";
+            _errorMessage = $"Fout tijdens opslaan: {ex.Message}";
         }
         finally
         {
@@ -247,9 +241,8 @@
             var response = await Http.DeleteAsync($"api/notes/{_selectedNote.Id}");
             if (response.IsSuccessStatusCode)
             {
-                Notes.Remove(_selectedNote);
-                CancelEdit();
                 await OnNotesUpdated.InvokeAsync();
+                CancelEdit();
             }
             else
             {
@@ -258,7 +251,7 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Fout bij verwijderen: {ex.Message}";
+            _errorMessage = $"Fout tijdens verwijderen: {ex.Message}";
         }
         finally
         {

@@ -49,6 +49,7 @@
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.AssemblyInfo.cs
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.csproj.CoreCompileInputs.cache
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.MvcApplicationPartsAssemblyInfo.cache
+/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.sourcelink.json
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/staticwebassets.build.json
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/staticwebassets.development.json
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/staticwebassets/msbuild.Portal.WebApp.Microsoft.AspNetCore.StaticWebAssets.props
@@ -56,14 +57,10 @@
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.Portal.WebApp.props
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.Portal.WebApp.props
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/staticwebassets.pack.json
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/scopedcss/Components/Layout/MainLayout.razor.rz.scp.css
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/scopedcss/Components/Layout/NavMenu.razor.rz.scp.css
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/scopedcss/bundle/Portal.WebApp.styles.css
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/scopedcss/projectbundle/Portal.WebApp.bundle.scp.css
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.W.676DD96C.Up2Date
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.dll
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/refint/Portal.WebApp.dll
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.pdb
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.genruntimeconfig.cache
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/ref/Portal.WebApp.dll
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.sourcelink.json

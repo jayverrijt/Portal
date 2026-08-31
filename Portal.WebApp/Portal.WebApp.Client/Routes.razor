@@ -1,0 +1,41 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using Portal.WebApp.Client.Components
+@using Portal.WebApp.Client.Layout
+@using Portal.WebApp.Client.Pages
+
+<Router AppAssembly="@typeof(Portal.WebApp.Client.Pages.Home).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized>
+                @if (context.User.Identity?.IsAuthenticated != true)
+                {
+                    <RedirectToLogin />
+                }
+                else
+                {
+                    <div class="p-5 text-center">
+                        <h4 class="text-nord-snow">Geen toegang</h4>
+                        <p class="text-nord-dim">Je hebt geen rechten om deze pagina te bekijken.</p>
+                        <a href="/" class="btn btn-primary btn-sm">Naar Dashboard</a>
+                    </div>
+                }
+            </NotAuthorized>
+            <Authorizing>
+                <div class="vh-100 d-flex flex-column align-items-center justify-content-center bg-nord-main">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <span class="text-nord-dim">Authenticatie controleren...</span>
+                </div>
+            </Authorizing>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <div class="p-5 text-center">
+                <h2 class="text-nord-snow">404 - Pagina niet gevonden</h2>
+                <p class="text-nord-dim">De route kon niet worden gevonden.</p>
+                <a href="/" class="btn btn-primary btn-sm">Naar Dashboard</a>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>

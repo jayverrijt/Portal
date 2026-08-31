@@ -1,0 +1,29 @@
+@page "/"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Dashboard - Portal</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold m-0 text-nord-snow">⚡ Portal Dashboard</h2>
+        <p class="text-nord-dim m-0">Welkom in je centrale beheeromgeving</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card p-4 border-nord bg-nord-dark">
+            <h5 class="fw-bold text-nord-snow mb-2">📁 Projecten & Documentatie</h5>
+            <p class="text-nord-dim small">Beheer al je projecten, vakken en herinneringen.</p>
+            <a href="projects" class="btn btn-primary btn-sm">Naar Projecten</a>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4 border-nord bg-nord-dark">
+            <h5 class="fw-bold text-nord-snow mb-2">⚡ FlowBoard Hub</h5>
+            <p class="text-nord-dim small">Overzicht van al je actieve sprints en Kanban borden.</p>
+            <a href="flowboard" class="btn btn-outline-secondary btn-sm">Naar FlowBoards</a>
+        </div>
+    </div>
+</div>

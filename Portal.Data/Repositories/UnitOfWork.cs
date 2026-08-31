@@ -11,7 +11,11 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Note> Notes { get; }
     public IRepository<Reminder> Reminders { get; }
     public IRepository<ScheduledTask> ScheduledTasks { get; }
+    public IRepository<KanbanCard> KanbanCards => _kanbanCards ??= new Repository<KanbanCard>(_context);
+    public IRepository<BoardLabel> BoardLabels => _boardLabels ??= new Repository<BoardLabel>(_context);
 
+    private IRepository<KanbanCard>? _kanbanCards;
+    private IRepository<BoardLabel>? _boardLabels;
     public UnitOfWork(PortalDbContext context)
     {
         _context = context;
@@ -20,6 +24,9 @@ public class UnitOfWork : IUnitOfWork
         Reminders = new Repository<Reminder>(_context);
         ScheduledTasks = new Repository<ScheduledTask>(_context);
     }
+
+    public IRepository<KanbanBoard> KanbanBoards => _kanbanBoards ??= new Repository<KanbanBoard>(_context);
+    private IRepository<KanbanBoard>? _kanbanBoards;
 
     public async Task<int> CompleteAsync()
     {

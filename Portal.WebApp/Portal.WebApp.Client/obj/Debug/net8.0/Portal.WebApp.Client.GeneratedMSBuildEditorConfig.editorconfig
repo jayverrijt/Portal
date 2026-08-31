@@ -22,12 +22,40 @@ build_property.GenerateRazorMetadataSourceChecksumAttributes =
 build_property.MSBuildProjectDirectory = /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client
 build_property._RazorSourceGeneratorDebug = 
 
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Components/FlowBoardView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9GbG93Qm9hcmRWaWV3LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Components/ProjectNotesView.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Qcm9qZWN0Tm90ZXNWaWV3LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Components/RedirectToLogin.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9SZWRpcmVjdFRvTG9naW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Layout/LoginLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L0xvZ2luTGF5b3V0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L01haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L05hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Counter.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ291bnRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/FlowBoardPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRmxvd0JvYXJkUGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSG9tZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Login.razor]
@@ -36,6 +64,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Projects.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJvamVjdHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Um91dGVzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/_Imports.razor]

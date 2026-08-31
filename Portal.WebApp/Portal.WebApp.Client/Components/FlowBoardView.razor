@@ -1,0 +1,510 @@
+@using System.Net.Http.Json
+@using Portal.Domain.Enums
+@using Portal.DTOs.Kanban
+@inject HttpClient Http
+
+<div class="flowboard-container">
+    <!-- TOP CONTROLS & SPRINT / LABEL FILTER -->
+    <div class="card p-3 shadow-sm border-0 mb-3 bg-nord-dark">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold text-nord-snow">Sprint Filter:</span>
+                <select class="form-select form-select-sm w-auto" @bind="_selectedSprintFilter" @bind:after="ApplyFilter">
+                    <option value="-1">Alle Sprints</option>
+                    <option value="0">Geen Sprint</option>
+                    @for (int i = 1; i <= 10; i++)
+                    {
+                        var sprintNr = i;
+                        <option value="@sprintNr">Sprint @sprintNr</option>
+                    }
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => _showLabelModal = true">
+                    <i class="fa-solid fa-tags me-1"></i> Labels Beheren
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" @onclick="() => OpenCreateCardModal()">
+                    <i class="fa-solid fa-plus me-1"></i> Nieuwe Kaart
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span>@_errorMessage</span>
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+        </div>
+    }
+
+    <!-- 6-KOLOMMEN TRELLO KANBAN CANVAS -->
+    <div class="flowboard-canvas">
+        @foreach (var col in _columns)
+        {
+            var columnCards = _filteredCards.Where(c => c.Status == col.Status).ToList();
+
+            <div class="flowboard-column shadow-sm">
+                <!-- KOLOM HEADER -->
+                <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-nord bg-nord-dark rounded-top">
+                    <span class="fw-bold small text-uppercase" style="color: @col.HeaderColor;">@col.Title</span>
+                    <span class="badge bg-secondary rounded-pill">@columnCards.Count</span>
+                </div>
+
+                <!-- VERTICAAL SCROLLBARE KAARTEN LIJST -->
+                <div class="flowboard-card-list flex-grow-1"
+                     ondragover="event.preventDefault();"
+                     @ondrop="() => HandleDrop(col.Status)">
+
+                    @foreach (var card in columnCards)
+                    {
+                        <div class="flowboard-card card p-3 shadow-sm cursor-pointer position-relative user-select-none"
+                             draggable="true"
+                             @ondragstart="() => _draggedCard = card"
+                             @onclick="() => OpenEditCardModal(card)">
+
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="fw-bold m-0 text-nord-snow">@card.Title</h6>
+                                @if (card.SprintNumber.HasValue)
+                                {
+                                    <span class="badge border border-nord text-nord-snow bg-nord-dark small" style="font-size: 0.7rem;">
+                                        Sprint @card.SprintNumber
+                                    </span>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(card.Description))
+                            {
+                                <p class="small text-nord-dim mb-2 text-truncate" style="max-height: 40px;">
+                                    @card.Description
+                                </p>
+                            }
+
+                            <!-- LABELS -->
+                            @if (card.Labels.Any())
+                            {
+                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                    @foreach (var label in card.Labels)
+                                    {
+                                        <span class="badge text-white" style="background-color: @label.ColorHex; font-size: 0.68rem;">
+                                            @label.Name
+                                        </span>
+                                    }
+                                </div>
+                            }
+
+                            <!-- FOOTER MET DATUM & INLINE STATUS KIEZER -->
+                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-nord" @onclick:stopPropagation="true">
+                                <small class="text-nord-dim" style="font-size: 0.7rem;">
+                                    @(card.DueDate.HasValue ? $"📅 {card.DueDate.Value.ToLocalTime():dd MMM}" : "")
+                                </small>
+
+                                <div class="d-flex align-items-center gap-1">
+                                    <select class="form-select form-select-sm py-0 px-2"
+                                            style="font-size: 0.75rem; height: 26px; width: auto;"
+                                            value="@card.Status"
+                                            @onchange="(e) => OnStatusDropdownChanged(card, e)">
+                                        @foreach (var targetCol in _columns)
+                                        {
+                                            <option value="@targetCol.Status">@targetCol.Title</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <button type="button" class="btn btn-outline-secondary btn-sm border-dashed py-2 mt-auto" @onclick="() => OpenCreateCardModal(col.Status)">
+                        <i class="fa-solid fa-plus me-1"></i> Kaart toevoegen
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- KAART AANMAKEN / BEWERKEN NORD MODAL -->
+@if (_showCardModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-nord shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">@(_isEditingCard ? "Kaart Bewerken" : "Nieuwe Kaart Aanmaken")</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showCardModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titel</label>
+                        <input type="text" class="form-control" placeholder="bijv. API controller bouwen" @bind="_cardTitle" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Beschrijving</label>
+                        <textarea class="form-control" rows="3" placeholder="Toelichting of checklist..." @bind="_cardDescription"></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Status / Kolom</label>
+                            <select class="form-select" @bind="_cardStatus">
+                                @foreach (var col in _columns)
+                                {
+                                    <option value="@col.Status">@col.Title</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sprint</label>
+                            <select class="form-select" @bind="_cardSprint">
+                                <option value="">Geen Sprint</option>
+                                @for (int i = 1; i <= 10; i++)
+                                {
+                                    var sNum = i;
+                                    <option value="@sNum">Sprint @sNum</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Labels</label>
+                        <div class="d-flex flex-wrap gap-2 pt-1">
+                            @if (!_availableLabels.Any())
+                            {
+                                <small class="text-nord-dim fst-italic">Geen labels beschikbaar. Maak eerst een label aan.</small>
+                            }
+                            @foreach (var label in _availableLabels)
+                            {
+                                var isSelected = _selectedLabelIds.Contains(label.Id);
+                                <button type="button"
+                                        class="btn btn-sm @(isSelected ? "text-white shadow-sm" : "btn-outline-secondary")"
+                                        style="background-color: @(isSelected ? label.ColorHex : "transparent"); border-color: @label.ColorHex;"
+                                        @onclick="() => ToggleLabelSelection(label.Id)">
+                                    @label.Name
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    @if (_isEditingCard && _editingCardId.HasValue)
+                    {
+                        <button type="button" class="btn btn-outline-danger btn-sm" @onclick="() => DeleteCard(_editingCardId.Value)">
+                            <i class="fa-solid fa-trash me-1"></i> Verwijderen
+                        </button>
+                    }
+                    else
+                    {
+                        <div></div>
+                    }
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary btn-sm" @onclick="() => _showCardModal = false">Annuleren</button>
+                        <button type="button" class="btn btn-primary btn-sm" @onclick="SaveCard">Opslaan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- LABELS BEHEREN NORD MODAL -->
+@if (_showLabelModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-nord shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Labels Beheren</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showLabelModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3 p-3 bg-nord-dark rounded border border-nord">
+                        <h6 class="fw-bold mb-2 text-nord-snow">Nieuw Label Aanmaken</h6>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control" placeholder="Labelnaam (bijv. Bug, Fontys)" @bind="_newLabelName" />
+                            <input type="color" class="form-control form-control-color bg-nord-dark" style="width: 50px;" @bind="_newLabelColor" title="Kies kleur" />
+                            <button type="button" class="btn btn-primary text-nowrap" @onclick="CreateLabel">Toevoegen</button>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-2 text-nord-snow">Bestaande Labels</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        @if (!_availableLabels.Any())
+                        {
+                            <span class="text-nord-dim small">Nog geen labels aanwezig voor dit bord.</span>
+                        }
+                        @foreach (var lbl in _availableLabels)
+                        {
+                            <span class="badge text-white p-2" style="background-color: @lbl.ColorHex; font-size: 0.8rem;">
+                                @lbl.Name
+                            </span>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showLabelModal = false">Sluiten</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid? BoardId { get; set; }
+    [Parameter] public Guid? ProjectId { get; set; }
+
+    private Guid _activeBoardId;
+    private List<KanbanCardDto> _allCards = new();
+    private List<KanbanCardDto> _filteredCards = new();
+    private List<BoardLabelDto> _availableLabels = new();
+
+    private KanbanCardDto? _draggedCard;
+    private string? _errorMessage;
+
+    private int _selectedSprintFilter = -1;
+
+    // Kaart Modal State
+    private bool _showCardModal;
+    private bool _isEditingCard;
+    private Guid? _editingCardId;
+    private string _cardTitle = string.Empty;
+    private string _cardDescription = string.Empty;
+    private KanbanColumnStatus _cardStatus = KanbanColumnStatus.Backlog;
+    private string _cardSprint = string.Empty;
+    private List<Guid> _selectedLabelIds = new();
+
+    // Label Modal State
+    private bool _showLabelModal;
+    private string _newLabelName = string.Empty;
+    private string _newLabelColor = "#88c0d0";
+
+    private record ColumnDef(KanbanColumnStatus Status, string Title, string HeaderColor);
+
+    private readonly List<ColumnDef> _columns = new()
+    {
+        new(KanbanColumnStatus.Backlog, "Backlog", "#4c566a"),
+        new(KanbanColumnStatus.CurrentSprint, "Current Sprint", "#88c0d0"),
+        new(KanbanColumnStatus.Ongoing, "Ongoing", "#ebcb8b"),
+        new(KanbanColumnStatus.Testing, "Testing", "#b48ead"),
+        new(KanbanColumnStatus.Done, "Done", "#a3be8c"),
+        new(KanbanColumnStatus.OnHold, "On Hold", "#bf616a")
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (BoardId.HasValue && BoardId.Value != Guid.Empty)
+        {
+            _activeBoardId = BoardId.Value;
+            await LoadBoardData();
+        }
+        else if (ProjectId.HasValue && ProjectId.Value != Guid.Empty)
+        {
+            await LoadOrCreateProjectBoard(ProjectId.Value);
+        }
+    }
+
+    private async Task LoadOrCreateProjectBoard(Guid projId)
+    {
+        try
+        {
+            var boards = await Http.GetFromJsonAsync<List<KanbanBoardDto>>($"api/boards?projectId={projId}") ?? new();
+            var board = boards.FirstOrDefault();
+
+            if (board == null)
+            {
+                var createResponse = await Http.PostAsJsonAsync("api/boards", new CreateKanbanBoardDto
+                {
+                    Title = "Project FlowBoard",
+                    Description = "Automatisch aangemaakt bord voor dit project",
+                    ProjectId = projId
+                });
+
+                if (createResponse.IsSuccessStatusCode)
+                {
+                    board = await createResponse.Content.ReadFromJsonAsync<KanbanBoardDto>();
+                }
+            }
+
+            if (board != null)
+            {
+                _activeBoardId = board.Id;
+                await LoadBoardData();
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij laden project bord: {ex.Message}";
+        }
+    }
+
+    private async Task LoadBoardData()
+    {
+        try
+        {
+            _allCards = await Http.GetFromJsonAsync<List<KanbanCardDto>>($"api/flowboard?boardId={_activeBoardId}") ?? new();
+            _availableLabels = await Http.GetFromJsonAsync<List<BoardLabelDto>>($"api/boardlabels?boardId={_activeBoardId}") ?? new();
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij laden van FlowBoard: {ex.Message}";
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        if (_selectedSprintFilter == -1)
+        {
+            _filteredCards = _allCards;
+        }
+        else if (_selectedSprintFilter == 0)
+        {
+            _filteredCards = _allCards.Where(c => !c.SprintNumber.HasValue).ToList();
+        }
+        else
+        {
+            _filteredCards = _allCards.Where(c => c.SprintNumber == _selectedSprintFilter).ToList();
+        }
+    }
+
+    private void OpenCreateCardModal(KanbanColumnStatus defaultStatus = KanbanColumnStatus.Backlog)
+    {
+        _isEditingCard = false;
+        _editingCardId = null;
+        _cardTitle = string.Empty;
+        _cardDescription = string.Empty;
+        _cardStatus = defaultStatus;
+        _cardSprint = _selectedSprintFilter > 0 ? _selectedSprintFilter.ToString() : string.Empty;
+        _selectedLabelIds.Clear();
+        _showCardModal = true;
+    }
+
+    private void OpenEditCardModal(KanbanCardDto card)
+    {
+        _isEditingCard = true;
+        _editingCardId = card.Id;
+        _cardTitle = card.Title;
+        _cardDescription = card.Description ?? string.Empty;
+        _cardStatus = card.Status;
+        _cardSprint = card.SprintNumber.HasValue ? card.SprintNumber.Value.ToString() : string.Empty;
+        _selectedLabelIds = card.Labels.Select(l => l.Id).ToList();
+        _showCardModal = true;
+    }
+
+    private void ToggleLabelSelection(Guid labelId)
+    {
+        if (_selectedLabelIds.Contains(labelId))
+            _selectedLabelIds.Remove(labelId);
+        else
+            _selectedLabelIds.Add(labelId);
+    }
+
+    private async Task SaveCard()
+    {
+        if (string.IsNullOrWhiteSpace(_cardTitle))
+        {
+            _errorMessage = "Voer minimaal een titel in voor de kaart.";
+            return;
+        }
+
+        int? sprintNr = int.TryParse(_cardSprint, out var parsedSprint) ? parsedSprint : null;
+
+        if (_isEditingCard && _editingCardId.HasValue)
+        {
+            var updateDto = new UpdateKanbanCardDto
+            {
+                Title = _cardTitle,
+                Description = _cardDescription,
+                Status = _cardStatus,
+                SprintNumber = sprintNr,
+                LabelIds = _selectedLabelIds
+            };
+
+            var response = await Http.PutAsJsonAsync($"api/flowboard/{_editingCardId.Value}", updateDto);
+            if (response.IsSuccessStatusCode)
+            {
+                _showCardModal = false;
+                await LoadBoardData();
+            }
+        }
+        else
+        {
+            var createDto = new CreateKanbanCardDto
+            {
+                Title = _cardTitle,
+                Description = _cardDescription,
+                Status = _cardStatus,
+                SprintNumber = sprintNr,
+                BoardId = _activeBoardId,
+                LabelIds = _selectedLabelIds
+            };
+
+            var response = await Http.PostAsJsonAsync("api/flowboard", createDto);
+            if (response.IsSuccessStatusCode)
+            {
+                _showCardModal = false;
+                await LoadBoardData();
+            }
+        }
+    }
+
+    private async Task OnStatusDropdownChanged(KanbanCardDto card, ChangeEventArgs e)
+    {
+        if (Enum.TryParse<KanbanColumnStatus>(e.Value?.ToString(), out var newStatus))
+        {
+            await MoveCardStatus(card, newStatus);
+        }
+    }
+
+    private async Task MoveCardStatus(KanbanCardDto card, KanbanColumnStatus newStatus)
+    {
+        card.Status = newStatus;
+        var response = await Http.PatchAsJsonAsync($"api/flowboard/{card.Id}/status", new UpdateKanbanCardStatusDto { Status = newStatus });
+        if (response.IsSuccessStatusCode)
+        {
+            ApplyFilter();
+        }
+        else
+        {
+            await LoadBoardData();
+        }
+    }
+
+    private async Task HandleDrop(KanbanColumnStatus targetStatus)
+    {
+        if (_draggedCard != null && _draggedCard.Status != targetStatus)
+        {
+            await MoveCardStatus(_draggedCard, targetStatus);
+            _draggedCard = null;
+        }
+    }
+
+    private async Task DeleteCard(Guid cardId)
+    {
+        var response = await Http.DeleteAsync($"api/flowboard/{cardId}");
+        if (response.IsSuccessStatusCode)
+        {
+            _showCardModal = false;
+            await LoadBoardData();
+        }
+    }
+
+    private async Task CreateLabel()
+    {
+        if (string.IsNullOrWhiteSpace(_newLabelName)) return;
+
+        var dto = new CreateBoardLabelDto
+        {
+            Name = _newLabelName,
+            ColorHex = _newLabelColor,
+            BoardId = _activeBoardId
+        };
+
+        var response = await Http.PostAsJsonAsync("api/boardlabels", dto);
+        if (response.IsSuccessStatusCode)
+        {
+            _newLabelName = string.Empty;
+            _newLabelColor = "#88c0d0";
+            await LoadBoardData();
+        }
+    }
+}

@@ -1,0 +1,183 @@
+@page "/flowboard"
+@attribute [Authorize]
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using Portal.DTOs.Kanban
+@using Portal.WebApp.Client.Components
+@inject HttpClient Http
+
+<PageTitle>FlowBoard Hub</PageTitle>
+
+@if (_selectedBoard != null)
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mb-2" @onclick="() => _selectedBoard = null">
+                <i class="fa-solid fa-arrow-left me-1"></i> Terug naar alle Borden
+            </button>
+            <h2 class="fw-bold m-0 text-nord-snow">⚡ @_selectedBoard.Title</h2>
+            <p class="text-nord-dim m-0">@(_selectedBoard.Description ?? "Standalone Kanban Workflow")</p>
+        </div>
+    </div>
+
+    <FlowBoardView BoardId="_selectedBoard.Id" />
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold m-0 text-nord-snow">⚡ FlowBoard Hub</h2>
+            <p class="text-nord-dim m-0">Beheer al je losse Trello/Kanban borden voor school, werk en persoonlijke projecten</p>
+        </div>
+        <button type="button" class="btn btn-primary" @onclick="() => _showCreateBoardModal = true">
+            <i class="fa-solid fa-plus me-1"></i> Nieuw Bord Aanmaken
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@_errorMessage</div>
+    }
+
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-nord-dim">Borden laden...</p>
+        </div>
+    }
+    else if (!_boards.Any())
+    {
+        <div class="card card-body text-center py-5 bg-nord-dark border-nord">
+            <h5 class="text-nord-snow">Nog geen losse FlowBoards aanwezig</h5>
+            <p class="text-nord-dim small">Maak een bord aan om te beginnen (bijv. "Semester 3 Taken" of "Persoonlijk").</p>
+            <div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => _showCreateBoardModal = true">
+                    <i class="fa-solid fa-plus me-1"></i> Eerste Bord Maken
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var board in _boards)
+            {
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-nord bg-nord-dark">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold text-nord-snow m-0">@board.Title</h5>
+                                <span class="badge border border-nord text-nord-snow bg-nord-card">@board.CardCount kaarten</span>
+                            </div>
+                            <p class="card-text text-nord-dim small flex-grow-1">
+                                @(string.IsNullOrWhiteSpace(board.Description) ? "Geen beschrijving" : board.Description)
+                            </p>
+                            <div class="pt-3 border-top border-nord d-flex justify-content-between align-items-center">
+                                <small class="text-nord-dim">@board.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</small>
+                                <button type="button" class="btn btn-sm btn-primary" @onclick="() => _selectedBoard = board">
+                                    Bord Openen <i class="fa-solid fa-arrow-right ms-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@if (_showCreateBoardModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-nord shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Nieuw FlowBoard Maken</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showCreateBoardModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Bordtitel</label>
+                        <input type="text" class="form-control" placeholder="bijv. Semester 3 Taken" @bind="_newBoardTitle" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Beschrijving (Optioneel)</label>
+                        <textarea class="form-control" rows="3" placeholder="Korte toelichting over dit bord..." @bind="_newBoardDescription"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showCreateBoardModal = false">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateBoard">Bord Aanmaken</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<KanbanBoardDto> _boards = new();
+    private KanbanBoardDto? _selectedBoard;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    private bool _showCreateBoardModal;
+    private string _newBoardTitle = string.Empty;
+    private string _newBoardDescription = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBoards();
+    }
+
+    private async Task LoadBoards()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _boards = await Http.GetFromJsonAsync<List<KanbanBoardDto>>("api/boards") ?? new();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij laden van borden: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreateBoard()
+    {
+        if (string.IsNullOrWhiteSpace(_newBoardTitle))
+        {
+            _errorMessage = "Voer een titel in voor het bord.";
+            return;
+        }
+
+        try
+        {
+            var dto = new CreateKanbanBoardDto
+            {
+                Title = _newBoardTitle,
+                Description = _newBoardDescription,
+                ProjectId = null
+            };
+
+            var response = await Http.PostAsJsonAsync("api/boards", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                _showCreateBoardModal = false;
+                _newBoardTitle = string.Empty;
+                _newBoardDescription = string.Empty;
+                await LoadBoards();
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij aanmaken bord: {ex.Message}";
+        }
+    }
+}

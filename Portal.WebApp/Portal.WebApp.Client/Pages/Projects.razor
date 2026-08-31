@@ -9,150 +9,171 @@
 @using Portal.WebApp.Client.Components
 @inject HttpClient Http
 
-<PageTitle>Projecten - Portal Dashboard</PageTitle>
+<PageTitle>Projecten & FlowBoards</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold m-0">Projecten & Vakken</h2>
-        <p class="text-muted m-0">Centraal overzicht van projecten, aantekeningen en actiepunten</p>
-    </div>
-    <button type="button" class="btn btn-primary" @onclick="OpenNewProjectModal">
-        <span>+ Nieuw Project</span>
-    </button>
-</div>
-
-@if (!string.IsNullOrEmpty(_errorMessage))
+@if (_activeProjectForBoard != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <span>@_errorMessage</span>
-        <button type="button" class="btn-close" @onclick="ClearErrorMessage"></button>
-    </div>
-}
-
-@if (_isLoading)
-{
-    <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 text-muted">Projecten ophalen...</p>
-    </div>
-}
-else if (_projects == null || !_projects.Any())
-{
-    <div class="card card-body text-center py-5 border-dashed">
-        <h5 class="text-muted">Nog geen projecten aanwezig</h5>
-        <p class="text-muted small">Maak een project of schoolvak aan om aantekeningen bij te houden.</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <button type="button" class="btn btn-outline-primary btn-sm" @onclick="OpenNewProjectModal">
-                <span>Project Toevoegen</span>
+            <button class="btn btn-outline-secondary btn-sm mb-2" @onclick="() => _activeProjectForBoard = null">
+                <i class="fa-solid fa-arrow-left me-1"></i> Terug naar Projecten
             </button>
+            <h2 class="fw-bold m-0 text-nord-snow">⚡ FlowBoard: @_activeProjectForBoard.Title</h2>
+            <p class="text-nord-dim m-0">Project-specifieke sprints, labels en kanban workflow</p>
         </div>
     </div>
+
+    <FlowBoardView ProjectId="_activeProjectForBoard.Id" />
 }
 else
 {
-    <div class="row g-4">
-        @foreach (var project in _projects)
-        {
-            <div class="col-lg-6">
-                <div class="card h-100 shadow-sm border-0 bg-light-subtle">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                        <h5 class="card-title fw-bold m-0 text-primary">@project.Title</h5>
-                        <small class="text-muted">@project.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</small>
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <p class="card-text text-secondary mb-3">@project.Description</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold m-0 text-nord-snow">📁 Projecten & Vakken</h2>
+            <p class="text-nord-dim m-0">Centraal overzicht van projecten, FlowBoards en documentatie</p>
+        </div>
+        <button type="button" class="btn btn-primary" @onclick="OpenNewProjectModal">
+            <i class="fa-solid fa-plus me-1"></i> Nieuw Project
+        </button>
+    </div>
 
-                        @if (!string.IsNullOrWhiteSpace(project.RepositoryUrl))
-                        {
-                            <div class="mb-3">
-                                <a href="@project.RepositoryUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                    <span>Repository Bekijken</span>
-                                </a>
-                            </div>
-                        }
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span>@_errorMessage</span>
+            <button type="button" class="btn-close" @onclick="ClearErrorMessage"></button>
+        </div>
+    }
 
-                        <!-- NOTITIES KNOP & QUICK PREVIEW -->
-                        <div class="mt-2 p-3 bg-white rounded border">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="fw-bold text-uppercase text-muted small m-0">Aantekeningen (@project.Notes.Count)</h6>
-                                <button type="button" class="btn btn-primary btn-sm" @onclick="() => OpenProjectNotes(project)">
-                                    <span>Notities Openen</span>
-                                </button>
-                            </div>
-                            @if (project.Notes.Any())
-                            {
-                                <div class="list-group list-group-flush small">
-                                    @foreach (var note in project.Notes.Take(2))
-                                    {
-                                        <div class="list-group-item px-0 py-1 border-0 text-truncate text-secondary">
-                                            <strong>• @note.Title:</strong> @note.Content
-                                        </div>
-                                    }
-                                    @if (project.Notes.Count > 2)
-                                    {
-                                        <div class="text-muted fst-italic pt-1" style="font-size: 0.75rem;">
-                                            + @(project.Notes.Count - 2) overige aantekeningen...
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <p class="text-muted small m-0 fst-italic">Geen notities aanwezig. Klik op "Notities Openen" om aantekeningen te maken.</p>
-                            }
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-nord-dim">Projecten ophalen...</p>
+        </div>
+    }
+    else if (_projects == null || !_projects.Any())
+    {
+        <div class="card card-body text-center py-5 bg-nord-dark border-nord">
+            <h5 class="text-nord-snow">Nog geen projecten aanwezig</h5>
+            <p class="text-nord-dim small">Maak een project of schoolvak aan om te beginnen.</p>
+            <div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="OpenNewProjectModal">
+                    <i class="fa-solid fa-plus me-1"></i> Project Toevoegen
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var project in _projects)
+            {
+                <div class="col-lg-6">
+                    <div class="card h-100 shadow-sm border-nord bg-nord-card">
+                        <div class="card-header bg-nord-dark border-nord d-flex justify-content-between align-items-center py-3">
+                            <h5 class="card-title fw-bold m-0 text-nord-ice">@project.Title</h5>
+                            <button class="btn btn-sm btn-primary" @onclick="() => _activeProjectForBoard = project">
+                                ⚡ Open FlowBoard
+                            </button>
                         </div>
 
-                        <!-- HERINNERINGEN SECTIE -->
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="fw-bold text-uppercase text-muted small m-0">Actiepunten / Deadlines (@project.Reminders.Count)</h6>
-                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" @onclick="() => OpenAddReminderModal(project.Id)">
-                                    <span>+ Taak</span>
-                                </button>
-                            </div>
-                            @if (project.Reminders.Any())
+                        <div class="card-body d-flex flex-column gap-3">
+                            @if (!string.IsNullOrWhiteSpace(project.Description))
                             {
-                                <div class="list-group list-group-flush rounded border">
-                                    @foreach (var reminder in project.Reminders)
-                                    {
-                                        <div class="list-group-item bg-white d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <span class="@(reminder.IsCompleted ? "text-decoration-line-through text-muted" : "fw-semibold")">
-                                                    @reminder.Title
-                                                </span>
-                                                @if (reminder.DueDate != default)
-                                                {
-                                                    <div class="small text-muted">
-                                                        Deadline: @reminder.DueDate.ToLocalTime().ToString("dd MMM HH:mm")
-                                                    </div>
-                                                }
-                                            </div>
-                                            <button type="button" class="btn btn-sm @(reminder.IsCompleted ? "btn-success" : "btn-outline-secondary")"
-                                                    @onclick="() => ToggleReminder(reminder)">
-                                                <span>@(reminder.IsCompleted ? "Voltooid" : "Aanvinken")</span>
-                                            </button>
-                                        </div>
-                                    }
+                                <p class="card-text text-nord-snow mb-0">@project.Description</p>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(project.RepositoryUrl))
+                            {
+                                <div>
+                                    <a href="@project.RepositoryUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fa-brands fa-github me-1"></i> Repository Bekijken
+                                    </a>
                                 </div>
                             }
-                            else
-                            {
-                                <p class="text-muted small fst-italic">Geen actieve herinneringen.</p>
-                            }
+
+                            <div class="p-3 bg-nord-dark rounded border border-nord">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-uppercase text-nord-dim small m-0">Aantekeningen (@project.Notes.Count)</span>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2" @onclick="() => OpenProjectNotes(project)">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i> Notities Openen
+                                    </button>
+                                </div>
+                                @if (project.Notes.Any())
+                                {
+                                    <div class="d-flex flex-column gap-1 small">
+                                        @foreach (var note in project.Notes.Take(2))
+                                        {
+                                            <div class="text-truncate text-nord-snow py-1 border-bottom border-nord border-opacity-25">
+                                                <strong class="text-nord-ice">• @note.Title:</strong> <span class="text-nord-dim">@note.Content</span>
+                                            </div>
+                                        }
+                                        @if (project.Notes.Count > 2)
+                                        {
+                                            <div class="text-nord-dim fst-italic pt-1" style="font-size: 0.75rem;">
+                                                + @(project.Notes.Count - 2) overige aantekeningen...
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-nord-dim small m-0 fst-italic">Geen notities aanwezig.</p>
+                                }
+                            </div>
+
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-uppercase text-nord-dim small m-0">Actiepunten (@project.Reminders.Count)</span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-nord-ice" @onclick="() => OpenAddReminderModal(project.Id)">
+                                        <i class="fa-solid fa-plus me-1"></i> Taak
+                                    </button>
+                                </div>
+                                @if (project.Reminders.Any())
+                                {
+                                    <div class="list-group list-group-flush rounded border border-nord">
+                                        @foreach (var reminder in project.Reminders)
+                                        {
+                                            <div class="list-group-item bg-nord-dark border-nord d-flex justify-content-between align-items-center text-nord-snow py-2 px-3">
+                                                <div>
+                                                    <span class="@(reminder.IsCompleted ? "text-decoration-line-through text-nord-dim" : "fw-semibold text-nord-snow")">
+                                                        @reminder.Title
+                                                    </span>
+                                                    @if (reminder.DueDate != default)
+                                                    {
+                                                        <div class="text-nord-dim" style="font-size: 0.75rem;">
+                                                            Deadline: @reminder.DueDate.ToLocalTime().ToString("dd MMM HH:mm")
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <button type="button" class="btn btn-sm @(reminder.IsCompleted ? "btn-nord-success" : "btn-outline-secondary")"
+                                                        style="font-size: 0.75rem; padding: 3px 10px;"
+                                                        @onclick="() => ToggleReminder(reminder)">
+                                                    <span>@(reminder.IsCompleted ? "Voltooid" : "Aanvinken")</span>
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-nord-dim small fst-italic mb-0">Geen actieve herinneringen.</p>
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
+            }
+        </div>
+    }
 }
 
-<!-- NIEUW PROJECT MODAL -->
 @if (_showNewProjectModal)
 {
-    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1050;">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+            <div class="modal-content border-nord shadow-lg">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">Nieuw Project Aanmaken</h5>
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
@@ -160,11 +181,11 @@ else
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Titel</label>
-                        <input type="text" class="form-control" placeholder="bijv. Software Architecture" @bind="_newProject.Title" />
+                        <input type="text" class="form-control" placeholder="bijv. Semester 3 Project" @bind="_newProject.Title" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Beschrijving</label>
-                        <textarea class="form-control" rows="3" placeholder="Korte toelichting of doelen..." @bind="_newProject.Description"></textarea>
+                        <textarea class="form-control" rows="3" placeholder="Korte toelichting..." @bind="_newProject.Description"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Repository URL (Optioneel)</label>
@@ -180,12 +201,11 @@ else
     </div>
 }
 
-<!-- NIEUWE REMINDER MODAL -->
 @if (_selectedProjectIdForReminder != null)
 {
-    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1050;">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+            <div class="modal-content border-nord shadow-lg">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">Actiepunt / Deadline Toevoegen</h5>
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
@@ -193,7 +213,7 @@ else
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Titel</label>
-                        <input type="text" class="form-control" placeholder="bijv. Documentatie opleveren" @bind="_newReminder.Title" />
+                        <input type="text" class="form-control" placeholder="bijv. Documentatie inleveren" @bind="_newReminder.Title" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Beschrijving</label>
@@ -213,7 +233,6 @@ else
     </div>
 }
 
-<!-- NOTITIES SPLIT-VIEW COMPONENT -->
 <ProjectNotesView IsOpen="_showNotesModal"
                   Project="_activeProjectForNotes"
                   Notes="_activeProjectForNotes?.Notes ?? new()"
@@ -233,6 +252,7 @@ else
 
     private bool _showNotesModal;
     private ProjectDto? _activeProjectForNotes;
+    private ProjectDto? _activeProjectForBoard;
 
     protected override async Task OnInitializedAsync()
     {
@@ -275,7 +295,6 @@ else
 
     private void OpenNewProjectModal() => _showNewProjectModal = true;
     private void ClearErrorMessage() => _errorMessage = null;
-
     private void CloseModals()
     {
         _showNewProjectModal = false;

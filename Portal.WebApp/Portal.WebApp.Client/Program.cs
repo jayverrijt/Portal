@@ -4,8 +4,10 @@ using Portal.WebApp.Client.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-builder.Services.AddTransient<JwtAuthorizationHandler>();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
 
+builder.Services.AddTransient<JwtAuthorizationHandler>();
 builder.Services.AddScoped(sp =>
 {
     var handler = sp.GetRequiredService<JwtAuthorizationHandler>();
@@ -16,7 +18,7 @@ builder.Services.AddScoped(sp =>
     };
 });
 
-builder.Services.AddAuthorizationCore();
-builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<CustomAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthStateProvider>());
 
 await builder.Build().RunAsync();

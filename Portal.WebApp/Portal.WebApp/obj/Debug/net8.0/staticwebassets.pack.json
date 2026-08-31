@@ -1,10 +1,6 @@
 {
   "Files": [
     {
-      "Id": "/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/scopedcss/projectbundle/Portal.WebApp.bundle.scp.css",
-      "PackagePath": "staticwebassets/Portal.WebApp.bundle.scp.css"
-    },
-    {
       "Id": "/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/wwwroot/app.css",
       "PackagePath": "staticwebassets/app.css"
     },

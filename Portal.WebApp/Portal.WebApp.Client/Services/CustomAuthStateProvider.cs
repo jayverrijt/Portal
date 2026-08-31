@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 
@@ -6,43 +7,41 @@ namespace Portal.WebApp.Client.Services;
 
 public class CustomAuthStateProvider : AuthenticationStateProvider
 {
-    private readonly IJSRuntime _jsRuntime;
-    private readonly AuthenticationState _anonymous;
+    private readonly IJSRuntime _js;
+    private readonly AuthenticationState _anonymous = new(new ClaimsPrincipal(new ClaimsIdentity()));
+    private const string TokenKey = "authToken";
 
-    public CustomAuthStateProvider(IJSRuntime jsRuntime)
+    public CustomAuthStateProvider(IJSRuntime js)
     {
-        _jsRuntime = jsRuntime;
-        _anonymous = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+        _js = js;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         try
         {
-            var token = await _jsRuntime.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            var token = await _js.InvokeAsync<string?>("localStorage.getItem", TokenKey);
+
             if (string.IsNullOrWhiteSpace(token))
             {
                 return _anonymous;
             }
 
-            var claims = JwtParser.ParseClaimsFromJwt(token).ToList();
+            var claims = ParseClaimsFromJwt(token).ToList();
 
-            // Controleer verloopdatum (exp claim)
             var expClaim = claims.FirstOrDefault(c => c.Type == "exp");
             if (expClaim != null && long.TryParse(expClaim.Value, out var expSeconds))
             {
-                var expDate = DateTimeOffset.FromUnixTimeSeconds(expSeconds);
-                if (expDate <= DateTimeOffset.UtcNow)
+                var expDate = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
+                if (expDate < DateTime.UtcNow)
                 {
-                    await _jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", "authToken");
+                    await _js.InvokeVoidAsync("localStorage.removeItem", TokenKey);
                     return _anonymous;
                 }
             }
 
-            var identity = new ClaimsIdentity(claims, "jwt");
-            var user = new ClaimsPrincipal(identity);
-
-            return new AuthenticationState(user);
+            var identity = new ClaimsIdentity(claims, "jwt", ClaimTypes.Name, ClaimTypes.Role);
+            return new AuthenticationState(new ClaimsPrincipal(identity));
         }
         catch
         {
@@ -50,31 +49,62 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
         }
     }
 
-    public async Task MarkUserAsAuthenticated(string token)
+    public async Task SetTokenAsync(string? token)
     {
-        try
+        if (string.IsNullOrWhiteSpace(token))
         {
-            await _jsRuntime.InvokeVoidAsync("sessionStorage.setItem", "authToken", token);
-            var claims = JwtParser.ParseClaimsFromJwt(token);
-            var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
-            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(authenticatedUser)));
+            await _js.InvokeVoidAsync("localStorage.removeItem", TokenKey);
+            NotifyAuthenticationStateChanged(Task.FromResult(_anonymous));
         }
-        catch
+        else
         {
-            // Negeer
+            await _js.InvokeVoidAsync("localStorage.setItem", TokenKey, token);
+            var claims = ParseClaimsFromJwt(token).ToList();
+            var identity = new ClaimsIdentity(claims, "jwt", ClaimTypes.Name, ClaimTypes.Role);
+            var principal = new ClaimsPrincipal(identity);
+            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(principal)));
         }
     }
 
-    public async Task MarkUserAsLoggedOut()
+    private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
     {
-        try
+        var claims = new List<Claim>();
+        var parts = jwt.Split('.');
+        if (parts.Length < 2) return claims;
+
+        var payload = parts[1];
+        var jsonBytes = ParseBase64WithoutPadding(payload);
+        var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
+
+        if (keyValuePairs == null) return claims;
+
+        foreach (var kvp in keyValuePairs)
         {
-            await _jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", "authToken");
-            NotifyAuthenticationStateChanged(Task.FromResult(_anonymous));
+            var valueStr = kvp.Value?.ToString() ?? string.Empty;
+
+            if (kvp.Key == "nameid" || kvp.Key == "sub")
+            {
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, valueStr));
+            }
+            else if (kvp.Key == "email" || kvp.Key == "unique_name")
+            {
+                claims.Add(new Claim(ClaimTypes.Name, valueStr));
+                claims.Add(new Claim(ClaimTypes.Email, valueStr));
+            }
+
+            claims.Add(new Claim(kvp.Key, valueStr));
         }
-        catch
+
+        return claims;
+    }
+
+    private static byte[] ParseBase64WithoutPadding(string base64)
+    {
+        switch (base64.Length % 4)
         {
-            // Negeer
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
         }
+        return Convert.FromBase64String(base64);
     }
 }

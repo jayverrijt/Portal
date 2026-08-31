@@ -1,60 +1,83 @@
 @page "/login"
+@layout LoginLayout
+@using System.ComponentModel.DataAnnotations
 @using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Authorization
 @using Portal.DTOs.Auth
 @using Portal.WebApp.Client.Services
 @inject HttpClient Http
-@inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Inloggen - Portal</PageTitle>
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow border-0">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4 fw-bold">Portal Login</h3>
-
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <div class="alert alert-danger">@_errorMessage</div>
-                }
-
-                <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
-                    <DataAnnotationsValidator />
-
-                    <div class="mb-3">
-                        <label class="form-label">E-mailadres</label>
-                        <InputText @bind-Value="_loginModel.Email" class="form-control" placeholder="naam@voorbeeld.nl" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Wachtwoord</label>
-                        <InputText @bind-Value="_loginModel.Password" type="password" class="form-control" />
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 py-2" disabled="@_isSubmitting">
-                        @if (_isSubmitting)
-                        {
-                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        }
-                        Inloggen
-                    </button>
-                </EditForm>
-            </div>
+<div class="card border-nord shadow-lg bg-nord-dark p-4 rounded-3">
+    <div class="text-center mb-4">
+        <div class="d-inline-flex align-items-center justify-content-center bg-nord-surface rounded-circle mb-2" style="width: 54px; height: 54px;">
+            <i class="fa-solid fa-bolt text-nord-yellow fs-3"></i>
         </div>
+        <h3 class="fw-bold text-nord-snow m-0">Portal</h3>
+        <p class="text-nord-dim small m-0">Log in om door te gaan</p>
     </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger py-2 small mb-3 border-0 text-nord-snow" style="background-color: var(--nord11);" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> @_errorMessage
+        </div>
+    }
+
+    <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label class="form-label text-nord-snow small fw-semibold">E-mailadres</label>
+            <div class="input-group">
+                <span class="input-group-text bg-nord-surface border-nord text-nord-dim">
+                    <i class="fa-solid fa-envelope"></i>
+                </span>
+                <InputText class="form-control" placeholder="naam@voorbeeld.nl" @bind-Value="_loginModel.Email" />
+            </div>
+            <ValidationMessage For="() => _loginModel.Email" class="text-danger small mt-1" />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label text-nord-snow small fw-semibold">Wachtwoord</label>
+            <div class="input-group">
+                <span class="input-group-text bg-nord-surface border-nord text-nord-dim">
+                    <i class="fa-solid fa-lock"></i>
+                </span>
+                <InputText type="password" class="form-control" placeholder="••••••••" @bind-Value="_loginModel.Password" />
+            </div>
+            <ValidationMessage For="() => _loginModel.Password" class="text-danger small mt-1" />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" disabled="@_isLoading">
+            @if (_isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <span>Inloggen...</span>
+            }
+            else
+            {
+                <span>Inloggen</span>
+            }
+        </button>
+    </EditForm>
 </div>
 
 @code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
     private LoginDto _loginModel = new();
+    private bool _isLoading;
     private string? _errorMessage;
-    private bool _isSubmitting;
 
     private async Task HandleLogin()
     {
-        _isSubmitting = true;
+        _isLoading = true;
         _errorMessage = null;
-        var loginSuccessful = false;
 
         try
         {
@@ -62,33 +85,40 @@
 
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-                if (result != null && !string.IsNullOrEmpty(result.Token))
+                var authResult = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+
+                if (authResult != null && !string.IsNullOrEmpty(authResult.Token))
                 {
-                    if (AuthStateProvider is CustomAuthStateProvider customStateProvider)
+                    if (AuthStateProvider is CustomAuthStateProvider customAuth)
                     {
-                        await customStateProvider.MarkUserAsAuthenticated(result.Token);
+                        await customAuth.SetTokenAsync(authResult.Token);
                     }
-                    loginSuccessful = true;
+
+                    var destination = "/";
+                    if (!string.IsNullOrWhiteSpace(ReturnUrl) && ReturnUrl != "/" && ReturnUrl != "%2F")
+                    {
+                        destination = ReturnUrl.StartsWith("/") ? ReturnUrl : "/" + ReturnUrl;
+                    }
+
+                    Navigation.NavigateTo(destination);
+                }
+                else
+                {
+                    _errorMessage = "Geen geldig token ontvangen van de server.";
                 }
             }
             else
             {
-                _errorMessage = "Ongeldige inloggegevens. Controleer je e-mail en wachtwoord.";
+                _errorMessage = "Onjuist e-mailadres of wachtwoord.";
             }
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Fout bij inloggen: {ex.Message}";
+            _errorMessage = $"Verbindingsfout met API: {ex.Message}";
         }
         finally
         {
-            _isSubmitting = false;
-        }
-
-        if (loginSuccessful)
-        {
-            Navigation.NavigateTo("/projects");
+            _isLoading = false;
         }
     }
 }

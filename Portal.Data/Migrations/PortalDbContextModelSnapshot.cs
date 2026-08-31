@@ -17,10 +17,25 @@ namespace Portal.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.29")
+                .HasAnnotation("ProductVersion", "8.0.30")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+
+            modelBuilder.Entity("BoardLabelKanbanCard", b =>
+                {
+                    b.Property<Guid>("CardsId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("LabelsId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("CardsId", "LabelsId");
+
+                    b.HasIndex("LabelsId");
+
+                    b.ToTable("BoardLabelKanbanCard");
+                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -227,6 +242,103 @@ namespace Portal.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Portal.Domain.Entities.BoardLabel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ColorHex")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.ToTable("BoardLabels");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.KanbanBoard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("KanbanBoards");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.KanbanCard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("SprintNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.ToTable("KanbanCards");
+                });
+
             modelBuilder.Entity("Portal.Domain.Entities.Note", b =>
                 {
                     b.Property<Guid>("Id")
@@ -359,6 +471,21 @@ namespace Portal.Data.Migrations
                     b.ToTable("ScheduledTasks");
                 });
 
+            modelBuilder.Entity("BoardLabelKanbanCard", b =>
+                {
+                    b.HasOne("Portal.Domain.Entities.KanbanCard", null)
+                        .WithMany()
+                        .HasForeignKey("CardsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Portal.Domain.Entities.BoardLabel", null)
+                        .WithMany()
+                        .HasForeignKey("LabelsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -410,6 +537,37 @@ namespace Portal.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Portal.Domain.Entities.BoardLabel", b =>
+                {
+                    b.HasOne("Portal.Domain.Entities.KanbanBoard", "Board")
+                        .WithMany("Labels")
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.KanbanBoard", b =>
+                {
+                    b.HasOne("Portal.Domain.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.KanbanCard", b =>
+                {
+                    b.HasOne("Portal.Domain.Entities.KanbanBoard", "Board")
+                        .WithMany("Cards")
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
             modelBuilder.Entity("Portal.Domain.Entities.Note", b =>
                 {
                     b.HasOne("Portal.Domain.Entities.Project", "Project")
@@ -428,6 +586,13 @@ namespace Portal.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.KanbanBoard", b =>
+                {
+                    b.Navigation("Cards");
+
+                    b.Navigation("Labels");
                 });
 
             modelBuilder.Entity("Portal.Domain.Entities.Project", b =>

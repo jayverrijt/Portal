@@ -5,30 +5,26 @@ namespace Portal.WebApp.Client.Services;
 
 public class JwtAuthorizationHandler : DelegatingHandler
 {
-    private readonly IJSRuntime _jsRuntime;
+    private readonly IJSRuntime _js;
 
-    public JwtAuthorizationHandler(IJSRuntime jsRuntime)
+    public JwtAuthorizationHandler(IJSRuntime js)
     {
-        _jsRuntime = jsRuntime;
+        _js = js;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         try
         {
-            var token = await _jsRuntime.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            var token = await _js.InvokeAsync<string?>("localStorage.getItem", "authToken");
             if (!string.IsNullOrWhiteSpace(token))
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
         }
-        catch (InvalidOperationException)
+        catch
         {
-            // JS interop niet beschikbaar tijdens server prerendering
-        }
-        catch (Exception)
-        {
-            // Fallback
+            // SSR pre-render fallback
         }
 
         return await base.SendAsync(request, cancellationToken);

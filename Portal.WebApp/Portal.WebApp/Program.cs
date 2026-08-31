@@ -10,7 +10,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
-// 2. HTTP Client & JWT Handler (voor SSR & API Calls)
+// 2. HTTP Client & JWT Handler
 builder.Services.AddTransient<JwtAuthorizationHandler>();
 builder.Services.AddScoped(sp =>
 {
@@ -22,7 +22,7 @@ builder.Services.AddScoped(sp =>
     };
 });
 
-// 3. Fallback Authenticatie met het juiste loginpad (/login)
+// 3. Fallback Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -30,9 +30,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 builder.Services.AddAuthorization();
 
-// 4. Blazor Auth State Provider
+// 4. Server Auth State Provider
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthStateProvider>();
 
 var app = builder.Build();
 
@@ -56,6 +56,13 @@ app.UseAuthorization();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(Portal.WebApp.Client._Imports).Assembly);
+    .AddAdditionalAssemblies(typeof(Portal.WebApp.Client.Routes).Assembly);
 
 app.Run();
+
+// Dummy provider voor SSR bootstrap
+public class ServerAuthStateProvider : AuthenticationStateProvider
+{
+    public override Task<AuthenticationState> GetAuthenticationStateAsync() =>
+        Task.FromResult(new AuthenticationState(new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity())));
+}

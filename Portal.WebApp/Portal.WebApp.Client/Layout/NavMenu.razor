@@ -1,0 +1,62 @@
+@namespace Portal.WebApp.Client.Layout
+@inject NavigationManager Navigation
+@inject Portal.WebApp.Client.Services.CustomAuthStateProvider AuthState
+
+<div class="d-flex flex-column h-100 p-3 bg-nord-dark border-end border-nord">
+    <!-- BRAND / HEADER -->
+    <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-nord">
+        <a href="" class="d-flex align-items-center text-decoration-none text-nord-snow gap-2">
+            <span class="fs-4 text-nord-yellow">⚡</span>
+            @if (!IsCollapsed)
+            {
+                <span class="fs-5 fw-bold tracking-wide">Portal</span>
+            }
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-secondary p-1 border-0 text-nord-dim" @onclick="Toggle">
+            <i class="fa-solid @(IsCollapsed ? "fa-angles-right" : "fa-angles-left")"></i>
+        </button>
+    </div>
+
+    <!-- NAV LINKS -->
+    <nav class="nav nav-pills flex-column gap-2 flex-grow-1">
+        <NavLink class="nav-link d-flex align-items-center gap-3 text-nord-dim rounded-2 px-3 py-2" href="" Match="NavLinkMatch.All">
+            <i class="fa-solid fa-house fa-fw"></i>
+            @if (!IsCollapsed) { <span>Dashboard</span> }
+        </NavLink>
+
+        <NavLink class="nav-link d-flex align-items-center gap-3 text-nord-dim rounded-2 px-3 py-2" href="projects">
+            <i class="fa-solid fa-folder-open fa-fw"></i>
+            @if (!IsCollapsed) { <span>Projecten</span> }
+        </NavLink>
+
+        <NavLink class="nav-link d-flex align-items-center gap-3 text-nord-dim rounded-2 px-3 py-2" href="flowboard">
+            <i class="fa-solid fa-table-columns fa-fw"></i>
+            @if (!IsCollapsed) { <span>FlowBoards</span> }
+        </NavLink>
+    </nav>
+
+    <!-- FOOTER / LOGOUT -->
+    <div class="pt-3 border-top border-nord">
+        <button type="button" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-@(IsCollapsed ? "center" : "start") gap-2 btn-sm" @onclick="Logout">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            @if (!IsCollapsed) { <span>Uitloggen</span> }
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsCollapsed { get; set; }
+    [Parameter] public EventCallback<bool> OnToggleSidebar { get; set; }
+
+    private async Task Toggle()
+    {
+        IsCollapsed = !IsCollapsed;
+        await OnToggleSidebar.InvokeAsync(IsCollapsed);
+    }
+
+    private async Task Logout()
+    {
+        await AuthState.SetTokenAsync(null);
+        Navigation.NavigateTo("/login", replace: true);
+    }
+}

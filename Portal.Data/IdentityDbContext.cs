@@ -15,6 +15,10 @@ public class PortalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Reminder> Reminders => Set<Reminder>();
     public DbSet<ScheduledTask> ScheduledTasks => Set<ScheduledTask>();
 
+    public DbSet<KanbanCard> KanbanCards { get; set; } = null!;
+    public DbSet<BoardLabel> BoardLabels { get; set; } = null!;
+    public DbSet<KanbanBoard> KanbanBoards { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
