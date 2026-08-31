@@ -74,8 +74,24 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTm90ZXNQYWdlLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/PastebinPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUGFzdGViaW5QYWdlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Projects.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJvamVjdHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/UrlShortenerPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVXJsU2hvcnRlbmVyUGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/UtilsPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVXRpbHNQYWdlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/WeightPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvV2VpZ2h0UGFnZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Routes.razor]

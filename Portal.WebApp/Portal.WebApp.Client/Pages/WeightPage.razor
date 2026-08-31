@@ -1,0 +1,336 @@
+@page "/utils/weight"
+@attribute [Authorize]
+@using System.Globalization
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using Portal.DTOs.Utils
+@inject HttpClient Http
+
+<PageTitle>Weight Tracker - Portal</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="utils" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="fa-solid fa-arrow-left me-1"></i> Terug naar Utils
+        </a>
+        <h2 class="fw-bold m-0 text-nord-snow">⚖️ Weight Tracker</h2>
+        <p class="text-nord-dim m-0">Monitor je ochtend- en avondgewicht met persistente database trends</p>
+    </div>
+</div>
+
+<!-- TREND GRAFIEK -->
+<div class="card p-4 border-nord bg-nord-dark mb-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-nord-snow m-0">Voortgangsgrafiek (kg)</h5>
+        <div class="d-flex gap-3 small">
+            <span class="d-flex align-items-center gap-1 text-nord-yellow">
+                <i class="fa-solid fa-sun"></i> Ochtend
+            </span>
+            <span class="d-flex align-items-center gap-1 text-nord-ice">
+                <i class="fa-solid fa-moon"></i> Avond
+            </span>
+        </div>
+    </div>
+
+    @if (_distinctDates.Count >= 2)
+    {
+        var minW = GetMinWeight();
+        var maxW = GetMaxWeight();
+        var yTicks = GetYAxisTicks(minW, maxW);
+
+        <div class="w-100 overflow-x-auto">
+            <svg viewBox="0 0 740 280" class="w-100" style="min-width: 600px; height: 260px;" xmlns="http://www.w3.org/2000/svg">
+                <!-- Horizontale Rasterlijnen & Y-Labels -->
+                @foreach (var tick in yTicks)
+                {
+                    var yPos = MapWeightToY(tick, minW, maxW);
+                    var yPosStr = yPos.ToString("0.0", CultureInfo.InvariantCulture);
+                    var tickStr = tick.ToString("0.0", CultureInfo.InvariantCulture);
+
+                    <line x1="60" y1="@yPosStr" x2="710" y2="@yPosStr" stroke="#434c5e" stroke-dasharray="3" stroke-width="1" />
+                    @((MarkupString)$"<text x='50' y='{(yPos + 4).ToString("0.0", CultureInfo.InvariantCulture)}' fill='#9aa5b8' font-size='11' text-anchor='end' font-family='monospace'>{tickStr}</text>")
+                }
+
+                <!-- Verticale Datumlijnen & X-Labels -->
+                @for (int i = 0; i < _distinctDates.Count; i++)
+                {
+                    var xPos = MapIndexToX(i, _distinctDates.Count);
+                    var xPosStr = xPos.ToString("0.0", CultureInfo.InvariantCulture);
+
+                    <line x1="@xPosStr" y1="30" x2="@xPosStr" y2="210" stroke="#3b4252" stroke-width="1" />
+                    @((MarkupString)$"<text x='{xPosStr}' y='235' fill='#9aa5b8' font-size='11' text-anchor='middle'>{_distinctDates[i]:dd MMM}</text>")
+                }
+
+                <!-- Ochtend Lijn -->
+                @if (GetPointsForSlot("Ochtend", minW, maxW).Count() > 1)
+                {
+                    <polyline fill="none" stroke="#ebcb8b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                              points="@GetPolylinePoints("Ochtend", minW, maxW)" />
+                }
+                @foreach (var pt in GetPointsForSlot("Ochtend", minW, maxW))
+                {
+                    var xStr = pt.X.ToString("0.0", CultureInfo.InvariantCulture);
+                    var yStr = pt.Y.ToString("0.0", CultureInfo.InvariantCulture);
+                    var textYStr = (pt.Y - 10).ToString("0.0", CultureInfo.InvariantCulture);
+                    var valStr = pt.Value.ToString("0.0", CultureInfo.InvariantCulture);
+
+                    <g>
+                        <circle cx="@xStr" cy="@yStr" r="5" fill="#ebcb8b" stroke="#2e3440" stroke-width="2" />
+                        @((MarkupString)$"<text x='{xStr}' y='{textYStr}' fill='#ebcb8b' font-size='11' text-anchor='middle' font-weight='bold'>{valStr}</text>")
+                    </g>
+                }
+
+                <!-- Avond Lijn -->
+                @if (GetPointsForSlot("Avond", minW, maxW).Count() > 1)
+                {
+                    <polyline fill="none" stroke="#88c0d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                              points="@GetPolylinePoints("Avond", minW, maxW)" />
+                }
+                @foreach (var pt in GetPointsForSlot("Avond", minW, maxW))
+                {
+                    var xStr = pt.X.ToString("0.0", CultureInfo.InvariantCulture);
+                    var yStr = pt.Y.ToString("0.0", CultureInfo.InvariantCulture);
+                    var textYStr = (pt.Y + 18).ToString("0.0", CultureInfo.InvariantCulture);
+                    var valStr = pt.Value.ToString("0.0", CultureInfo.InvariantCulture);
+
+                    <g>
+                        <circle cx="@xStr" cy="@yStr" r="5" fill="#88c0d0" stroke="#2e3440" stroke-width="2" />
+                        @((MarkupString)$"<text x='{xStr}' y='{textYStr}' fill='#88c0d0' font-size='11' text-anchor='middle' font-weight='bold'>{valStr}</text>")
+                    </g>
+                }
+            </svg>
+        </div>
+    }
+    else
+    {
+        <p class="text-nord-dim small fst-italic mb-0 py-3 text-center">
+            Voeg metingen toe op minimaal 2 verschillende datums om de trendlijn te genereren.
+        </p>
+    }
+</div>
+
+<div class="row g-4">
+    <!-- METING FORMULIER -->
+    <div class="col-lg-4">
+        <div class="card p-4 border-nord bg-nord-dark shadow-sm">
+            <h5 class="fw-bold text-nord-snow mb-3">Gewicht Loggen</h5>
+            <div class="mb-3">
+                <label class="form-label">Gewicht (kg)</label>
+                <div class="input-group">
+                    <input type="number" step="0.1" class="form-control fs-5 fw-bold text-nord-ice" placeholder="80.5" @bind="_newWeight" />
+                    <span class="input-group-text bg-nord-surface border-nord text-nord-dim">kg</span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Datum & Tijd</label>
+                <input type="datetime-local" class="form-control" @bind="_newDate" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Moment / Slot</label>
+                <select class="form-select" @bind="_newSlot">
+                    <option value="Ochtend">🌅 Ochtend (Nuchter)</option>
+                    <option value="Middag">☀️ Middag</option>
+                    <option value="Avond">🌙 Avond</option>
+                </select>
+            </div>
+
+            <button type="button" class="btn btn-primary w-100" @onclick="LogWeight" disabled="@_isSubmitting">
+                @if (_isSubmitting)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                    <span>Opslaan...</span>
+                }
+                else
+                {
+                    <i class="fa-solid fa-plus me-1"></i>
+                    <span>Opslaan in Database</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <!-- LOGBOEK LIJST -->
+    <div class="col-lg-8">
+        <div class="card border-nord bg-nord-dark shadow-sm">
+            <div class="card-header bg-nord-card border-nord py-3">
+                <h5 class="fw-bold text-nord-snow m-0">Metingen Geschiedenis (@_logs.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                @if (_isLoading)
+                {
+                    <div class="p-4 text-center text-nord-dim">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Laden uit database...
+                    </div>
+                }
+                else if (!_logs.Any())
+                {
+                    <div class="p-4 text-center text-nord-dim fst-italic">Nog geen metingen opgeslagen.</div>
+                }
+                else
+                {
+                    <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                        <table class="table table-dark table-hover m-0 align-middle">
+                            <thead class="sticky-top bg-nord-dark">
+                                <tr class="border-nord text-nord-dim small text-uppercase">
+                                    <th class="ps-4">Datum & Tijd</th>
+                                    <th>Moment</th>
+                                    <th>Gewicht</th>
+                                    <th class="text-end pe-4">Actie</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var log in _logs.OrderByDescending(l => l.Timestamp))
+                                {
+                                    <tr class="border-nord">
+                                        <td class="ps-4 text-nord-snow fw-semibold">
+                                            @log.Timestamp.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                        </td>
+                                        <td>
+                                            <span class="badge border border-nord bg-nord-surface @(log.TimeSlot == "Ochtend" ? "text-nord-yellow" : log.TimeSlot == "Avond" ? "text-nord-ice" : "text-nord-dim")">
+                                                @(log.TimeSlot == "Ochtend" ? "🌅 Ochtend" : log.TimeSlot == "Avond" ? "🌙 Avond" : "☀️ Middag")
+                                            </span>
+                                        </td>
+                                        <td class="fs-6 fw-bold text-nord-snow">@log.WeightKg.ToString("0.0", CultureInfo.InvariantCulture) kg</td>
+                                        <td class="text-end pe-4">
+                                            <button class="btn btn-sm btn-outline-danger p-1" @onclick="() => DeleteWeight(log.Id)">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<WeightLogDto> _logs = new();
+    private List<DateTime> _distinctDates = new();
+    private double _newWeight = 80.0;
+    private DateTime _newDate = DateTime.Now;
+    private string _newSlot = "Ochtend";
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLogs();
+    }
+
+    private async Task LoadLogs()
+    {
+        _isLoading = true;
+        try
+        {
+            _logs = await Http.GetFromJsonAsync<List<WeightLogDto>>("api/weight") ?? new();
+            RefreshDistinctDates();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fout bij laden gewichtslogs: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void RefreshDistinctDates()
+    {
+        _distinctDates = _logs.Select(l => l.Timestamp.Date).Distinct().OrderBy(d => d).ToList();
+    }
+
+    private async Task LogWeight()
+    {
+        if (_newWeight <= 30 || _newWeight >= 250) return;
+
+        _isSubmitting = true;
+        var dto = new CreateWeightLogDto
+        {
+            WeightKg = Math.Round(_newWeight, 1),
+            Timestamp = _newDate,
+            TimeSlot = _newSlot
+        };
+
+        try
+        {
+            var res = await Http.PostAsJsonAsync("api/weight", dto);
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadLogs();
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteWeight(Guid id)
+    {
+        var res = await Http.DeleteAsync($"api/weight/{id}");
+        if (res.IsSuccessStatusCode)
+        {
+            _logs.RemoveAll(l => l.Id == id);
+            RefreshDistinctDates();
+        }
+    }
+
+    private double GetMinWeight() => _logs.Any() ? Math.Floor(_logs.Min(l => l.WeightKg) - 0.5) : 70.0;
+    private double GetMaxWeight() => _logs.Any() ? Math.Ceiling(_logs.Max(l => l.WeightKg) + 0.5) : 90.0;
+
+    private List<double> GetYAxisTicks(double min, double max)
+    {
+        var ticks = new List<double>();
+        var range = max - min;
+        var step = range <= 4 ? 0.5 : Math.Round(range / 4.0, 1);
+        for (double w = min; w <= max + 0.05; w += step)
+        {
+            ticks.Add(Math.Round(w, 1));
+        }
+        return ticks;
+    }
+
+    private double MapIndexToX(int index, int totalDates)
+    {
+        if (totalDates <= 1) return 380;
+        return 75.0 + (index * (610.0 / (totalDates - 1)));
+    }
+
+    private double MapWeightToY(double weight, double min, double max)
+    {
+        var range = Math.Max(max - min, 0.5);
+        var norm = (weight - min) / range;
+        return 210.0 - (norm * 160.0);
+    }
+
+    private record ChartPoint(double X, double Y, double Value);
+
+    private IEnumerable<ChartPoint> GetPointsForSlot(string slot, double min, double max)
+    {
+        var entries = _logs.Where(l => l.TimeSlot.Equals(slot, StringComparison.OrdinalIgnoreCase)).OrderBy(l => l.Timestamp).ToList();
+
+        foreach (var entry in entries)
+        {
+            var dateIndex = _distinctDates.IndexOf(entry.Timestamp.Date);
+            if (dateIndex >= 0)
+            {
+                var x = MapIndexToX(dateIndex, _distinctDates.Count);
+                var y = MapWeightToY(entry.WeightKg, min, max);
+                yield return new ChartPoint(x, y, entry.WeightKg);
+            }
+        }
+    }
+
+    private string GetPolylinePoints(string slot, double min, double max)
+    {
+        return string.Join(" ", GetPointsForSlot(slot, min, max)
+            .Select(p => $"{p.X.ToString("0.0", CultureInfo.InvariantCulture)},{p.Y.ToString("0.0", CultureInfo.InvariantCulture)}"));
+    }
+}
