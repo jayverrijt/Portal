@@ -1065,3 +1065,4 @@
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/gx9cf9vyy1.gz
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/47k2ua63lt.gz
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/zut9de47ww.gz
+/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/Portal.WebApp.Client.sourcelink.json

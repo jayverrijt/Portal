@@ -1,0 +1,274 @@
+@using System.Net.Http.Json
+@using Portal.DTOs.Notes
+@using Portal.DTOs.Projects
+@inject HttpClient Http
+
+@if (IsOpen)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.6); z-index: 1050;">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-light d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="modal-title fw-bold m-0 text-primary">Aantekeningen: @Project?.Title</h5>
+                        <small class="text-muted">Notities en documentatie beheren</small>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="Close"></button>
+                </div>
+
+                <div class="modal-body p-0">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger m-3 mb-0" role="alert">
+                            <span>@_errorMessage</span>
+                        </div>
+                    }
+
+                    <div class="row g-0" style="min-height: 520px;">
+                        <!-- LINKER LIJST: OVERZICHT NOTITIES -->
+                        <div class="col-md-4 border-end p-3 bg-light-subtle d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="fw-semibold small text-uppercase text-muted">Notities (@(Notes?.Count ?? 0))</span>
+                                <button type="button" class="btn btn-sm btn-primary" @onclick="StartNewNote">
+                                    <span>+ Nieuw</span>
+                                </button>
+                            </div>
+
+                            <div class="flex-grow-1 overflow-y-auto" style="max-height: 440px;">
+                                @if (Notes == null || !Notes.Any())
+                                {
+                                    <div class="p-3 text-center text-muted fst-italic">
+                                        Geen notities gekoppeld aan dit project.
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="list-group list-group-flush gap-2">
+                                        @foreach (var note in Notes)
+                                        {
+                                            <button type="button"
+                                                    class="list-group-item list-group-item-action text-start p-3 rounded border @(_selectedNote?.Id == note.Id ? "border-primary bg-white shadow-sm" : "bg-white")"
+                                                    @onclick="() => SelectNote(note)">
+                                                <div class="fw-bold text-truncate">@note.Title</div>
+                                                <div class="small text-muted text-truncate">@(string.IsNullOrWhiteSpace(note.Content) ? "(Leeg)" : note.Content)</div>
+                                                <div class="text-muted mt-1" style="font-size: 0.75rem;">
+                                                    @note.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                                                </div>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- RECHTER PANEEL: EDITOR -->
+                        <div class="col-md-8 p-4 bg-white d-flex flex-column">
+                            @if (_isEditing || _isCreating)
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Titel</label>
+                                    <input type="text" class="form-control form-control-lg fw-bold" placeholder="Titel van aantekening..." @bind="_activeTitle" />
+                                </div>
+
+                                <div class="mb-3 flex-grow-1 d-flex flex-column">
+                                    <label class="form-label fw-semibold">Inhoud (Aantekeningen / Snippets)</label>
+                                    <textarea class="form-control flex-grow-1 font-monospace" style="min-height: 280px; resize: vertical;" placeholder="Schrijf hier je notitie..." @bind="_activeContent"></textarea>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                                    @if (_isEditing && _selectedNote != null)
+                                    {
+                                        <button type="button" class="btn btn-outline-danger btn-sm" @onclick="DeleteCurrentNote" disabled="@_isSaving">
+                                            <span>Verwijderen</span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <div></div>
+                                    }
+
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-secondary btn-sm" @onclick="CancelEdit" disabled="@_isSaving">Annuleren</button>
+                                        <button type="button" class="btn btn-primary btn-sm" @onclick="SaveNote" disabled="@_isSaving">
+                                            @if (_isSaving)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                            }
+                                            <span>Opslaan</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted text-center py-5">
+                                    <h5>Geen notitie geselecteerd</h5>
+                                    <p class="small">Kies links een bestaande notitie of maak direct een nieuwe aan.</p>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" @onclick="StartNewNote">
+                                        <span>Nieuwe Notitie Aanmaken</span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public ProjectDto? Project { get; set; }
+    [Parameter] public List<NoteDto> Notes { get; set; } = new();
+    [Parameter] public EventCallback OnClosed { get; set; }
+    [Parameter] public EventCallback OnNotesUpdated { get; set; }
+
+    private NoteDto? _selectedNote;
+    private bool _isEditing;
+    private bool _isCreating;
+    private bool _isSaving;
+    private string? _errorMessage;
+
+    private string _activeTitle = string.Empty;
+    private string _activeContent = string.Empty;
+
+    private void SelectNote(NoteDto note)
+    {
+        _errorMessage = null;
+        _selectedNote = note;
+        _activeTitle = note.Title;
+        _activeContent = note.Content;
+        _isEditing = true;
+        _isCreating = false;
+    }
+
+    private void StartNewNote()
+    {
+        _errorMessage = null;
+        _selectedNote = null;
+        _activeTitle = string.Empty;
+        _activeContent = string.Empty;
+        _isCreating = true;
+        _isEditing = false;
+    }
+
+    private void CancelEdit()
+    {
+        _isEditing = false;
+        _isCreating = false;
+        _selectedNote = null;
+        _errorMessage = null;
+    }
+
+    private async Task SaveNote()
+    {
+        if (string.IsNullOrWhiteSpace(_activeTitle) || Project == null)
+        {
+            _errorMessage = "Voer minimaal een titel in.";
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = null;
+
+        try
+        {
+            if (_isCreating)
+            {
+                var newNote = new CreateNoteDto
+                {
+                    Title = _activeTitle,
+                    Content = _activeContent,
+                    ProjectId = Project.Id
+                };
+
+                var response = await Http.PostAsJsonAsync("api/notes", newNote);
+                if (response.IsSuccessStatusCode)
+                {
+                    var created = await response.Content.ReadFromJsonAsync<NoteDto>();
+                    if (created != null)
+                    {
+                        Notes.Add(created);
+                        SelectNote(created);
+                    }
+                    await OnNotesUpdated.InvokeAsync();
+                }
+                else
+                {
+                    _errorMessage = "Kon notitie niet aanmaken.";
+                }
+            }
+            else if (_isEditing && _selectedNote != null)
+            {
+                var updateDto = new UpdateNoteDto
+                {
+                    Title = _activeTitle,
+                    Content = _activeContent,
+                    ProjectId = Project.Id
+                };
+
+                var response = await Http.PutAsJsonAsync($"api/notes/{_selectedNote.Id}", updateDto);
+                if (response.IsSuccessStatusCode)
+                {
+                    var updated = await response.Content.ReadFromJsonAsync<NoteDto>();
+                    if (updated != null)
+                    {
+                        _selectedNote.Title = updated.Title;
+                        _selectedNote.Content = updated.Content;
+                    }
+                    await OnNotesUpdated.InvokeAsync();
+                }
+                else
+                {
+                    _errorMessage = "Kon notitie niet bijwerken.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteCurrentNote()
+    {
+        if (_selectedNote == null) return;
+
+        _isSaving = true;
+        _errorMessage = null;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"api/notes/{_selectedNote.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                Notes.Remove(_selectedNote);
+                CancelEdit();
+                await OnNotesUpdated.InvokeAsync();
+            }
+            else
+            {
+                _errorMessage = "Kon notitie niet verwijderen.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij verwijderen: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task Close()
+    {
+        CancelEdit();
+        await OnClosed.InvokeAsync();
+    }
+}

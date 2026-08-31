@@ -23,7 +23,9 @@ public class ProjectController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
     {
-        var projects = await _unitOfWork.Projects.GetAllAsync();
+        var projects = (await _unitOfWork.Projects.GetAllAsync()).ToList();
+        var allNotes = (await _unitOfWork.Notes.GetAllAsync()).ToList();
+        var allReminders = (await _unitOfWork.Reminders.GetAllAsync()).ToList();
 
         var dtos = projects.Select(p => new ProjectDto
         {
@@ -32,7 +34,25 @@ public class ProjectController : ControllerBase
             Description = p.Description,
             RepositoryUrl = p.RepositoryUrl,
             CreatedAt = p.CreatedAt,
-            UpdatedAt = p.UpdatedAt
+            UpdatedAt = p.UpdatedAt,
+            Notes = allNotes.Where(n => n.ProjectId == p.Id).Select(n => new NoteDto
+            {
+                Id = n.Id,
+                Title = n.Title,
+                Content = n.Content,
+                ProjectId = n.ProjectId,
+                CreatedAt = n.CreatedAt
+            }).ToList(),
+            Reminders = allReminders.Where(r => r.ProjectId == p.Id).Select(r => new ReminderDto
+            {
+                Id = r.Id,
+                Title = r.Title,
+                Description = r.Description,
+                DueDate = r.DueDate,
+                IsCompleted = r.IsCompleted,
+                ProjectId = r.ProjectId,
+                CreatedAt = r.CreatedAt
+            }).ToList()
         });
 
         return Ok(dtos);
@@ -44,7 +64,6 @@ public class ProjectController : ControllerBase
         var project = await _unitOfWork.Projects.GetByIdAsync(id);
         if (project == null) return NotFound("Project niet gevonden.");
 
-        // Ophalen van eventuele gekoppelde notities en reminders
         var notes = await _unitOfWork.Notes.FindAsync(n => n.ProjectId == id);
         var reminders = await _unitOfWork.Reminders.FindAsync(r => r.ProjectId == id);
 

@@ -10,3 +10,4 @@
 /Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.pdb
 /Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/ref/Portal.dll
 /Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.csproj.AssemblyReference.cache
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.sourcelink.json

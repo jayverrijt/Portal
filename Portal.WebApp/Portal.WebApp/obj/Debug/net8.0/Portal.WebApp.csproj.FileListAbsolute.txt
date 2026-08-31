@@ -66,3 +66,4 @@
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.pdb
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.genruntimeconfig.cache
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/ref/Portal.WebApp.dll
+/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp/obj/Debug/net8.0/Portal.WebApp.sourcelink.json

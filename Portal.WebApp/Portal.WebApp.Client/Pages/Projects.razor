@@ -1,5 +1,4 @@
 @page "/projects"
-@rendermode InteractiveAuto
 @attribute [Authorize]
 @using System.Net.Http.Json
 @using Microsoft.AspNetCore.Authorization
@@ -7,14 +6,15 @@
 @using Portal.DTOs.Projects
 @using Portal.DTOs.Notes
 @using Portal.DTOs.Reminders
+@using Portal.WebApp.Client.Components
 @inject HttpClient Http
 
 <PageTitle>Projecten - Portal Dashboard</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold m-0">Projecten Dashboard</h2>
-        <p class="text-muted m-0">Beheer je projecten, gekoppelde notities en herinneringen</p>
+        <h2 class="fw-bold m-0">Projecten & Vakken</h2>
+        <p class="text-muted m-0">Centraal overzicht van projecten, aantekeningen en actiepunten</p>
     </div>
     <button type="button" class="btn btn-primary" @onclick="OpenNewProjectModal">
         <span>+ Nieuw Project</span>
@@ -33,14 +33,14 @@
 {
     <div class="text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 text-muted">Projecten laden uit API...</p>
+        <p class="mt-2 text-muted">Projecten ophalen...</p>
     </div>
 }
 else if (_projects == null || !_projects.Any())
 {
     <div class="card card-body text-center py-5 border-dashed">
         <h5 class="text-muted">Nog geen projecten aanwezig</h5>
-        <p class="text-muted small">Maak je eerste project aan om te beginnen.</p>
+        <p class="text-muted small">Maak een project of schoolvak aan om aantekeningen bij te houden.</p>
         <div>
             <button type="button" class="btn btn-outline-primary btn-sm" @onclick="OpenNewProjectModal">
                 <span>Project Toevoegen</span>
@@ -59,8 +59,8 @@ else
                         <h5 class="card-title fw-bold m-0 text-primary">@project.Title</h5>
                         <small class="text-muted">@project.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</small>
                     </div>
-                    <div class="card-body">
-                        <p class="card-text text-secondary">@project.Description</p>
+                    <div class="card-body d-flex flex-column">
+                        <p class="card-text text-secondary mb-3">@project.Description</p>
 
                         @if (!string.IsNullOrWhiteSpace(project.RepositoryUrl))
                         {
@@ -71,38 +71,43 @@ else
                             </div>
                         }
 
-                        <!-- NOTITIES -->
-                        <div class="mt-4">
+                        <!-- NOTITIES KNOP & QUICK PREVIEW -->
+                        <div class="mt-2 p-3 bg-white rounded border">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="fw-bold text-uppercase text-muted small m-0">Notities (@project.Notes.Count)</h6>
-                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" @onclick="() => OpenAddNoteModal(project.Id)">
-                                    <span>+ Notitie</span>
+                                <h6 class="fw-bold text-uppercase text-muted small m-0">Aantekeningen (@project.Notes.Count)</h6>
+                                <button type="button" class="btn btn-primary btn-sm" @onclick="() => OpenProjectNotes(project)">
+                                    <span>Notities Openen</span>
                                 </button>
                             </div>
                             @if (project.Notes.Any())
                             {
-                                <div class="list-group list-group-flush rounded border mb-2">
-                                    @foreach (var note in project.Notes)
+                                <div class="list-group list-group-flush small">
+                                    @foreach (var note in project.Notes.Take(2))
                                     {
-                                        <div class="list-group-item bg-white">
-                                            <div class="fw-semibold">@note.Title</div>
-                                            <div class="small text-secondary">@note.Content</div>
+                                        <div class="list-group-item px-0 py-1 border-0 text-truncate text-secondary">
+                                            <strong>• @note.Title:</strong> @note.Content
+                                        </div>
+                                    }
+                                    @if (project.Notes.Count > 2)
+                                    {
+                                        <div class="text-muted fst-italic pt-1" style="font-size: 0.75rem;">
+                                            + @(project.Notes.Count - 2) overige aantekeningen...
                                         </div>
                                     }
                                 </div>
                             }
                             else
                             {
-                                <p class="text-muted small fst-italic">Geen gekoppelde notities.</p>
+                                <p class="text-muted small m-0 fst-italic">Geen notities aanwezig. Klik op "Notities Openen" om aantekeningen te maken.</p>
                             }
                         </div>
 
-                        <!-- REMINDERS -->
+                        <!-- HERINNERINGEN SECTIE -->
                         <div class="mt-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="fw-bold text-uppercase text-muted small m-0">Herinneringen (@project.Reminders.Count)</h6>
+                                <h6 class="fw-bold text-uppercase text-muted small m-0">Actiepunten / Deadlines (@project.Reminders.Count)</h6>
                                 <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" @onclick="() => OpenAddReminderModal(project.Id)">
-                                    <span>+ Herinnering</span>
+                                    <span>+ Taak</span>
                                 </button>
                             </div>
                             @if (project.Reminders.Any())
@@ -149,17 +154,17 @@ else
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Nieuw Project Aanmaken</h5>
+                    <h5 class="modal-title fw-bold">Nieuw Project Aanmaken</h5>
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Titel</label>
-                        <input type="text" class="form-control" placeholder="bijv. Portal Dashboard" @bind="_newProject.Title" />
+                        <input type="text" class="form-control" placeholder="bijv. Software Architecture" @bind="_newProject.Title" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Beschrijving</label>
-                        <textarea class="form-control" rows="3" @bind="_newProject.Description"></textarea>
+                        <textarea class="form-control" rows="3" placeholder="Korte toelichting of doelen..." @bind="_newProject.Description"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Repository URL (Optioneel)</label>
@@ -175,35 +180,6 @@ else
     </div>
 }
 
-<!-- NIEUWE NOTITIE MODAL -->
-@if (_selectedProjectIdForNote != null)
-{
-    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Notitie Toevoegen</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Titel</label>
-                        <input type="text" class="form-control" @bind="_newNote.Title" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Inhoud</label>
-                        <textarea class="form-control" rows="4" @bind="_newNote.Content"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Annuleren</button>
-                    <button type="button" class="btn btn-primary" @onclick="CreateNote">Toevoegen</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
 <!-- NIEUWE REMINDER MODAL -->
 @if (_selectedProjectIdForReminder != null)
 {
@@ -211,13 +187,13 @@ else
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Herinnering Toevoegen</h5>
+                    <h5 class="modal-title fw-bold">Actiepunt / Deadline Toevoegen</h5>
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Titel</label>
-                        <input type="text" class="form-control" @bind="_newReminder.Title" />
+                        <input type="text" class="form-control" placeholder="bijv. Documentatie opleveren" @bind="_newReminder.Title" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Beschrijving</label>
@@ -237,19 +213,26 @@ else
     </div>
 }
 
+<!-- NOTITIES SPLIT-VIEW COMPONENT -->
+<ProjectNotesView IsOpen="_showNotesModal"
+                  Project="_activeProjectForNotes"
+                  Notes="_activeProjectForNotes?.Notes ?? new()"
+                  OnClosed="() => _showNotesModal = false"
+                  OnNotesUpdated="HandleNotesUpdated" />
+
 @code {
     private List<ProjectDto>? _projects;
     private bool _isLoading = true;
     private string? _errorMessage;
 
     private bool _showNewProjectModal;
-    private Guid? _selectedProjectIdForNote;
     private Guid? _selectedProjectIdForReminder;
-
     private CreateProjectDto _newProject = new();
-    private CreateNoteDto _newNote = new();
     private CreateReminderDto _newReminder = new();
     private DateTime _newReminderDueDate = DateTime.Now.AddDays(1);
+
+    private bool _showNotesModal;
+    private ProjectDto? _activeProjectForNotes;
 
     protected override async Task OnInitializedAsync()
     {
@@ -275,20 +258,27 @@ else
         }
     }
 
-    private void OpenNewProjectModal()
+    private void OpenProjectNotes(ProjectDto project)
     {
-        _showNewProjectModal = true;
+        _activeProjectForNotes = project;
+        _showNotesModal = true;
     }
 
-    private void ClearErrorMessage()
+    private async Task HandleNotesUpdated()
     {
-        _errorMessage = null;
+        await LoadProjects();
+        if (_activeProjectForNotes != null)
+        {
+            _activeProjectForNotes = _projects?.FirstOrDefault(p => p.Id == _activeProjectForNotes.Id);
+        }
     }
+
+    private void OpenNewProjectModal() => _showNewProjectModal = true;
+    private void ClearErrorMessage() => _errorMessage = null;
 
     private void CloseModals()
     {
         _showNewProjectModal = false;
-        _selectedProjectIdForNote = null;
         _selectedProjectIdForReminder = null;
     }
 
@@ -320,42 +310,6 @@ else
         }
     }
 
-    private void OpenAddNoteModal(Guid projectId)
-    {
-        _selectedProjectIdForNote = projectId;
-        _newNote = new CreateNoteDto { ProjectId = projectId };
-    }
-
-    private async Task CreateNote()
-    {
-        if (_selectedProjectIdForNote == null) return;
-
-        if (string.IsNullOrWhiteSpace(_newNote.Title))
-        {
-            _errorMessage = "Voer een titel in voor de notitie.";
-            return;
-        }
-
-        try
-        {
-            // Corrigeer route naar de NotesController: api/notes
-            var response = await Http.PostAsJsonAsync("api/notes", _newNote);
-            if (response.IsSuccessStatusCode)
-            {
-                CloseModals();
-                await LoadProjects();
-            }
-            else
-            {
-                _errorMessage = "Notitie kon niet worden opgeslagen.";
-            }
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = $"Fout bij toevoegen notitie: {ex.Message}";
-        }
-    }
-
     private void OpenAddReminderModal(Guid projectId)
     {
         _selectedProjectIdForReminder = projectId;
@@ -369,7 +323,7 @@ else
 
         if (string.IsNullOrWhiteSpace(_newReminder.Title))
         {
-            _errorMessage = "Voer een titel in voor de herinnering.";
+            _errorMessage = "Voer een titel in voor het actiepunt.";
             return;
         }
 
@@ -377,7 +331,6 @@ else
 
         try
         {
-            // Corrigeer route naar de RemindersController: api/reminders
             var response = await Http.PostAsJsonAsync("api/reminders", _newReminder);
             if (response.IsSuccessStatusCode)
             {
@@ -386,7 +339,7 @@ else
             }
             else
             {
-                _errorMessage = "Herinnering kon niet worden opgeslagen.";
+                _errorMessage = "Actiepunt kon niet worden opgeslagen.";
             }
         }
         catch (Exception ex)

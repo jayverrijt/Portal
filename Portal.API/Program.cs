@@ -14,12 +14,13 @@ using Portal.Domain.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Connection string & DbContext
+// 1. Connection string & DbContext met retry resiliency
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<PortalDbContext>(options =>
     options.UseMySql(
         connectionString,
-        new MySqlServerVersion(new Version(8, 0, 35))
+        new MySqlServerVersion(new Version(8, 0, 35)),
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure()
     ));
 
 // 2. Identity
@@ -55,12 +56,19 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 4. CORS configuratie voor Flutter Web / Mobile Dev
+// 4. CORS configuratie voor Blazor WebApp & Flutter Dev
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFlutterApp", policy =>
+    options.AddPolicy("AllowPortalClients", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:8080", "http://localhost:5000") // Voeg hier je Flutter dev poorten toe
+        policy.WithOrigins(
+                "http://localhost:5220",
+                "https://localhost:7220",
+                "http://localhost:5200",
+                "http://localhost:3000",
+                "http://localhost:8080",
+                "http://localhost:5000"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -73,11 +81,13 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHostedService<TaskSchedulerBackgroundService>();
 
-// 6. Controllers met camelCase JSON instellingen voor Flutter
+// 6. Controllers met circulaire referentie-beveiliging & camelCase
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
@@ -129,8 +139,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// CORS moet VOOR Authentication/Authorization geplaatst worden
-app.UseCors("AllowFlutterApp");
+// CORS vóór Authentication/Authorization
+app.UseCors("AllowPortalClients");
 
 app.UseAuthentication();
 app.UseAuthorization();

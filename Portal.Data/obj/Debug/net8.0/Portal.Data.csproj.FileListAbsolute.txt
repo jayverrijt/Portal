@@ -15,3 +15,4 @@
 /Users/jayv/Projects/Portal/Portal.Data/obj/Debug/net8.0/Portal.Data.pdb
 /Users/jayv/Projects/Portal/Portal.Data/obj/Debug/net8.0/Portal.Data.genruntimeconfig.cache
 /Users/jayv/Projects/Portal/Portal.Data/obj/Debug/net8.0/ref/Portal.Data.dll
+/Users/jayv/Projects/Portal/Portal.Data/obj/Debug/net8.0/Portal.Data.sourcelink.json

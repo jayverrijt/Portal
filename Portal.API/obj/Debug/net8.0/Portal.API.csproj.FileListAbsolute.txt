@@ -129,3 +129,4 @@
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.Portal.API.props
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.Portal.API.props
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets.pack.json
+/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.sourcelink.json
