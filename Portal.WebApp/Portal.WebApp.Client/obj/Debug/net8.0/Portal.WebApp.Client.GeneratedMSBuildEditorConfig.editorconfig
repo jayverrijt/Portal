@@ -1,0 +1,87 @@
+is_global = true
+build_property.EnableAotAnalyzer = 
+build_property.EnableSingleFileAnalyzer = 
+build_property.EnableTrimAnalyzer = false
+build_property.IncludeAllContentForSelfExtract = 
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = false
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = browser
+build_property.RootNamespace = Portal.WebApp.Client
+build_property.RootNamespace = Portal.WebApp.Client
+build_property.ProjectDir = /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = false
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client
+build_property._RazorSourceGeneratorDebug = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Components/FlowBoardView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9GbG93Qm9hcmRWaWV3LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Components/MarkdownView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9NYXJrZG93blZpZXcucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Components/ProjectNotesView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Qcm9qZWN0Tm90ZXNWaWV3LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Components/RedirectToLogin.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9SZWRpcmVjdFRvTG9naW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Components/RichNoteEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9SaWNoTm90ZUVkaXRvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Layout/LoginLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L0xvZ2luTGF5b3V0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L01haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L05hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ291bnRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/FlowBoardPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRmxvd0JvYXJkUGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSG9tZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTG9naW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/NotesPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTm90ZXNQYWdlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Pages/Projects.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJvamVjdHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Um91dGVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 

@@ -1,0 +1,74 @@
+<div class="rich-editor">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <!-- TOOLBAR -->
+        <div class="btn-group btn-group-sm bg-nord-dark border border-nord rounded" role="group">
+            <button type="button" class="btn btn-outline-secondary" title="Vetgedrukt (**)" @onclick='() => InsertFormat("**", "**", "vette tekst")'>
+                <i class="fa-solid fa-bold"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Cursief (*)" @onclick='() => InsertFormat("*", "*", "cursieve tekst")'>
+                <i class="fa-solid fa-italic"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Koptekst (##)" @onclick='() => InsertFormat("## ", "", "Koptekst")'>
+                <i class="fa-solid fa-heading"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Opsomming (-)" @onclick='() => InsertFormat("- ", "", "Item")'>
+                <i class="fa-solid fa-list-ul"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Genummerde lijst (1.)" @onclick='() => InsertFormat("1. ", "", "Stap")'>
+                <i class="fa-solid fa-list-ol"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Code snippet (`)" @onclick='() => InsertFormat("`", "`", "code")'>
+                <i class="fa-solid fa-code"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Code block (```)" @onclick='() => InsertFormat("```\n", "\n```", "codeblock")'>
+                <i class="fa-solid fa-file-code"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Hyperlink [link](url)" @onclick='() => InsertFormat("[", "](https://...)", "Link titel")'>
+                <i class="fa-solid fa-link"></i>
+            </button>
+        </div>
+
+        <!-- PREVIEW TOGGLE -->
+        <button type="button" class="btn btn-sm @(_showPreview ? "btn-primary" : "btn-outline-secondary")" @onclick="() => _showPreview = !_showPreview">
+            <i class="fa-solid @(_showPreview ? "fa-pen" : "fa-eye") me-1"></i>
+            <span>@(_showPreview ? "Editor" : "Live Preview")</span>
+        </button>
+    </div>
+
+    @if (_showPreview)
+    {
+        <div class="p-3 bg-nord-dark border border-nord rounded overflow-y-auto" style="min-height: 180px; max-height: 300px;">
+            <MarkdownView Content="@Value" />
+        </div>
+    }
+    else
+    {
+        <textarea class="form-control font-monospace small"
+                  rows="7"
+                  placeholder="Typ hier notities in Markdown... (bijv. **vet**, - lijst, ```code```)"
+                  value="@Value"
+                  @oninput="HandleInput"></textarea>
+    }
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private bool _showPreview = false;
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString() ?? string.Empty;
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private async Task InsertFormat(string prefix, string suffix, string placeholder)
+    {
+        Value = string.IsNullOrWhiteSpace(Value)
+            ? $"{prefix}{placeholder}{suffix}"
+            : $"{Value}\n{prefix}{placeholder}{suffix}";
+
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

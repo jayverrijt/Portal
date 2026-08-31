@@ -1,0 +1,148 @@
+@using System.Text.RegularExpressions
+@using System.Text
+
+<div class="markdown-body">
+    @((MarkupString)_renderedHtml)
+</div>
+
+@code {
+    [Parameter] public string Content { get; set; } = string.Empty;
+
+    private string _renderedHtml = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        _renderedHtml = ParseMarkdown(Content);
+    }
+
+    private static string ParseMarkdown(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "<p class='text-nord-dim fst-italic'>Geen inhoud...</p>";
+
+        var lines = raw.Replace("\r\n", "\n").Split('\n');
+        var sb = new StringBuilder();
+        bool inCodeBlock = false;
+        bool inUl = false;
+        bool inOl = false;
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+
+            // Code blocks ```
+            if (trimmed.StartsWith("```"))
+            {
+                if (inCodeBlock)
+                {
+                    sb.Append("</code></pre>");
+                    inCodeBlock = false;
+                }
+                else
+                {
+                    if (inUl) { sb.Append("</ul>"); inUl = false; }
+                    if (inOl) { sb.Append("</ol>"); inOl = false; }
+                    sb.Append("<pre class='p-2 bg-nord-main border border-nord rounded text-nord-ice small'><code>");
+                    inCodeBlock = true;
+                }
+                continue;
+            }
+
+            if (inCodeBlock)
+            {
+                sb.Append(System.Web.HttpUtility.HtmlEncode(line)).Append("\n");
+                continue;
+            }
+
+            // Unordered list
+            if (trimmed.StartsWith("- ") || trimmed.StartsWith("* "))
+            {
+                if (!inUl)
+                {
+                    if (inOl) { sb.Append("</ol>"); inOl = false; }
+                    sb.Append("<ul class='ps-3 mb-2'>");
+                    inUl = true;
+                }
+                sb.AppendFormat("<li>{0}</li>", FormatInline(trimmed.Substring(2)));
+                continue;
+            }
+            else if (inUl)
+            {
+                sb.Append("</ul>");
+                inUl = false;
+            }
+
+            // Ordered list
+            var olMatch = Regex.Match(trimmed, @"^\d+\.\s+(.*)");
+            if (olMatch.Success)
+            {
+                if (!inOl)
+                {
+                    if (inUl) { sb.Append("</ul>"); inUl = false; }
+                    sb.Append("<ol class='ps-3 mb-2'>");
+                    inOl = true;
+                }
+                sb.AppendFormat("<li>{0}</li>", FormatInline(olMatch.Groups[1].Value));
+                continue;
+            }
+            else if (inOl)
+            {
+                sb.Append("</ol>");
+                inOl = false;
+            }
+
+            // Lege regel
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                sb.Append("<div class='my-2'></div>");
+                continue;
+            }
+
+            // Headings
+            if (trimmed.StartsWith("### "))
+            {
+                sb.AppendFormat("<h6 class='fw-bold text-nord-snow mt-2 mb-1'>{0}</h6>", FormatInline(trimmed.Substring(4)));
+            }
+            else if (trimmed.StartsWith("## "))
+            {
+                sb.AppendFormat("<h5 class='fw-bold text-nord-snow mt-2 mb-1'>{0}</h5>", FormatInline(trimmed.Substring(3)));
+            }
+            else if (trimmed.StartsWith("# "))
+            {
+                sb.AppendFormat("<h4 class='fw-bold text-nord-ice mt-2 mb-1'>{0}</h4>", FormatInline(trimmed.Substring(2)));
+            }
+            else if (trimmed.StartsWith("> "))
+            {
+                sb.AppendFormat("<blockquote class='ps-3 border-start border-3 border-nord text-nord-dim fst-italic my-1'>{0}</blockquote>", FormatInline(trimmed.Substring(2)));
+            }
+            else
+            {
+                sb.AppendFormat("<p class='mb-1 text-nord-snow'>{0}</p>", FormatInline(trimmed));
+            }
+        }
+
+        if (inCodeBlock) sb.Append("</code></pre>");
+        if (inUl) sb.Append("</ul>");
+        if (inOl) sb.Append("</ol>");
+
+        return sb.ToString();
+    }
+
+    private static string FormatInline(string text)
+    {
+        var encoded = System.Web.HttpUtility.HtmlEncode(text);
+
+        // Inline code `code`
+        encoded = Regex.Replace(encoded, @"`([^`]+)`", "<code class='px-1 bg-nord-main rounded text-nord-ice small'>$1</code>");
+
+        // Bold **text**
+        encoded = Regex.Replace(encoded, @"\*\*([^*]+)\*\*", "<strong>$1</strong>");
+
+        // Italic *text*
+        encoded = Regex.Replace(encoded, @"\*([^*]+)\*", "<em>$1</em>");
+
+        // Links [title](url)
+        encoded = Regex.Replace(encoded, @"\[([^\]]+)\]\(([^)]+)\)", "<a href='$2' target='_blank' class='text-nord-ice text-decoration-underline'>$1</a>");
+
+        return encoded;
+    }
+}

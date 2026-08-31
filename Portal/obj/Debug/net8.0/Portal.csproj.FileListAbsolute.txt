@@ -1,0 +1,13 @@
+/Users/jayv/Projects/Portal/Portal/bin/Debug/net8.0/Portal.deps.json
+/Users/jayv/Projects/Portal/Portal/bin/Debug/net8.0/Portal.dll
+/Users/jayv/Projects/Portal/Portal/bin/Debug/net8.0/Portal.pdb
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.csproj.AssemblyReference.cache
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.GeneratedMSBuildEditorConfig.editorconfig
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.AssemblyInfoInputs.cache
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.AssemblyInfo.cs
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.csproj.CoreCompileInputs.cache
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.sourcelink.json
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.dll
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/refint/Portal.dll
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/Portal.pdb
+/Users/jayv/Projects/Portal/Portal/obj/Debug/net8.0/ref/Portal.dll

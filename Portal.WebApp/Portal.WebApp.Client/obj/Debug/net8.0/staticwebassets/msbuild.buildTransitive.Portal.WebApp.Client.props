@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="../buildMultiTargeting/Portal.WebApp.Client.props" />
+</Project>
