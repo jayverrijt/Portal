@@ -13,6 +13,7 @@
 
 @if (_activeProjectForBoard != null)
 {
+    <!-- PROJECT-SPECIFIEK FLOWBOARD WEERGAVE -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <button class="btn btn-outline-secondary btn-sm mb-2" @onclick="() => _activeProjectForBoard = null">
@@ -27,6 +28,7 @@
 }
 else
 {
+    <!-- STANDAARD PROJECTEN OVERZICHT -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold m-0 text-nord-snow">📁 Projecten & Vakken</h2>
@@ -71,13 +73,20 @@ else
             {
                 <div class="col-lg-6">
                     <div class="card h-100 shadow-sm border-nord bg-nord-card">
+                        <!-- KAART HEADER -->
                         <div class="card-header bg-nord-dark border-nord d-flex justify-content-between align-items-center py-3">
                             <h5 class="card-title fw-bold m-0 text-nord-ice">@project.Title</h5>
-                            <button class="btn btn-sm btn-primary" @onclick="() => _activeProjectForBoard = project">
-                                ⚡ Open FlowBoard
-                            </button>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm btn-primary" @onclick="() => _activeProjectForBoard = project">
+                                    ⚡ Open FlowBoard
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Project Verwijderen" @onclick="() => ConfirmDeleteProject(project)">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
                         </div>
 
+                        <!-- KAART BODY -->
                         <div class="card-body d-flex flex-column gap-3">
                             @if (!string.IsNullOrWhiteSpace(project.Description))
                             {
@@ -93,6 +102,7 @@ else
                                 </div>
                             }
 
+                            <!-- AANTEKENINGEN BLOK (GESORTEERD OP NIEUWSTE BOVENAAN) -->
                             <div class="p-3 bg-nord-dark rounded border border-nord">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="fw-bold text-uppercase text-nord-dim small m-0">Aantekeningen (@project.Notes.Count)</span>
@@ -103,7 +113,7 @@ else
                                 @if (project.Notes.Any())
                                 {
                                     <div class="d-flex flex-column gap-1 small">
-                                        @foreach (var note in project.Notes.Take(2))
+                                        @foreach (var note in project.Notes.OrderByDescending(n => n.CreatedAt).Take(2))
                                         {
                                             <div class="text-truncate text-nord-snow py-1 border-bottom border-nord border-opacity-25">
                                                 <strong class="text-nord-ice">• @note.Title:</strong> <span class="text-nord-dim">@note.Content</span>
@@ -112,7 +122,7 @@ else
                                         @if (project.Notes.Count > 2)
                                         {
                                             <div class="text-nord-dim fst-italic pt-1" style="font-size: 0.75rem;">
-                                                + @(project.Notes.Count - 2) overige aantekeningen...
+                                                + @(project.Notes.Count - 2) overige recente aantekeningen...
                                             </div>
                                         }
                                     </div>
@@ -123,6 +133,7 @@ else
                                 }
                             </div>
 
+                            <!-- ACTIEPUNTEN SECTIE -->
                             <div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="fw-bold text-uppercase text-nord-dim small m-0">Actiepunten (@project.Reminders.Count)</span>
@@ -133,7 +144,7 @@ else
                                 @if (project.Reminders.Any())
                                 {
                                     <div class="list-group list-group-flush rounded border border-nord">
-                                        @foreach (var reminder in project.Reminders)
+                                        @foreach (var reminder in project.Reminders.OrderBy(r => r.IsCompleted).ThenBy(r => r.DueDate))
                                         {
                                             <div class="list-group-item bg-nord-dark border-nord d-flex justify-content-between align-items-center text-nord-snow py-2 px-3">
                                                 <div>
@@ -147,11 +158,24 @@ else
                                                         </div>
                                                     }
                                                 </div>
-                                                <button type="button" class="btn btn-sm @(reminder.IsCompleted ? "btn-nord-success" : "btn-outline-secondary")"
-                                                        style="font-size: 0.75rem; padding: 3px 10px;"
-                                                        @onclick="() => ToggleReminder(reminder)">
-                                                    <span>@(reminder.IsCompleted ? "Voltooid" : "Aanvinken")</span>
-                                                </button>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <button type="button" class="btn btn-sm @(reminder.IsCompleted ? "btn-nord-success" : "btn-outline-secondary")"
+                                                            style="font-size: 0.75rem; padding: 3px 10px;"
+                                                            title="@(reminder.IsCompleted ? "Klik om te heropenen" : "Aanvinken")"
+                                                            @onclick="() => ToggleReminder(reminder)">
+                                                        <i class="fa-solid @(reminder.IsCompleted ? "fa-check" : "fa-circle") me-1"></i>
+                                                        <span>@(reminder.IsCompleted ? "Voltooid" : "Open")</span>
+                                                    </button>
+                                                    @if (reminder.IsCompleted)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                style="font-size: 0.75rem; padding: 3px 8px;"
+                                                                title="Voltooide taak verwijderen"
+                                                                @onclick="() => DeleteReminder(project, reminder.Id)">
+                                                            <i class="fa-solid fa-xmark"></i>
+                                                        </button>
+                                                    }
+                                                </div>
                                             </div>
                                         }
                                     </div>
@@ -169,6 +193,32 @@ else
     }
 }
 
+<!-- MODAL: PROJECT VERWIJDEREN BEVESTIGEN -->
+@if (_projectToDelete != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-nord shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>Project Verwijderen
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="() => _projectToDelete = null"></button>
+                </div>
+                <div class="modal-body text-nord-snow">
+                    <p>Weet je zeker dat je het project <strong class="text-nord-ice">"@_projectToDelete.Title"</strong> wilt verwijderen?</p>
+                    <p class="small text-nord-dim mb-0">Alle bijbehorende notities, deadlines en FlowBoard-kaarten worden permanent gewist.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _projectToDelete = null">Annuleren</button>
+                    <button type="button" class="btn btn-outline-danger" @onclick="ExecuteDeleteProject">Definitief Verwijderen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL: NIEUW PROJECT -->
 @if (_showNewProjectModal)
 {
     <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1050;">
@@ -201,6 +251,7 @@ else
     </div>
 }
 
+<!-- MODAL: NIEUWE REMINDER -->
 @if (_selectedProjectIdForReminder != null)
 {
     <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1050;">
@@ -235,7 +286,7 @@ else
 
 <ProjectNotesView IsOpen="_showNotesModal"
                   Project="_activeProjectForNotes"
-                  Notes="_activeProjectForNotes?.Notes ?? new()"
+                  Notes="_activeProjectForNotes?.Notes.OrderByDescending(n => n.CreatedAt).ToList() ?? new()"
                   OnClosed="() => _showNotesModal = false"
                   OnNotesUpdated="HandleNotesUpdated" />
 
@@ -246,6 +297,7 @@ else
 
     private bool _showNewProjectModal;
     private Guid? _selectedProjectIdForReminder;
+    private ProjectDto? _projectToDelete;
     private CreateProjectDto _newProject = new();
     private CreateReminderDto _newReminder = new();
     private DateTime _newReminderDueDate = DateTime.Now.AddDays(1);
@@ -278,6 +330,31 @@ else
         }
     }
 
+    private void ConfirmDeleteProject(ProjectDto project) => _projectToDelete = project;
+
+    private async Task ExecuteDeleteProject()
+    {
+        if (_projectToDelete == null) return;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"api/project/{_projectToDelete.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                _projectToDelete = null;
+                await LoadProjects();
+            }
+            else
+            {
+                _errorMessage = "Project kon niet worden verwijderd.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij verwijderen project: {ex.Message}";
+        }
+    }
+
     private void OpenProjectNotes(ProjectDto project)
     {
         _activeProjectForNotes = project;
@@ -299,6 +376,7 @@ else
     {
         _showNewProjectModal = false;
         _selectedProjectIdForReminder = null;
+        _projectToDelete = null;
     }
 
     private async Task CreateProject()
@@ -380,6 +458,22 @@ else
         catch (Exception ex)
         {
             _errorMessage = $"Fout bij bijwerken status: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteReminder(ProjectDto project, Guid reminderId)
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/reminders/{reminderId}");
+            if (response.IsSuccessStatusCode)
+            {
+                project.Reminders.RemoveAll(r => r.Id == reminderId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij verwijderen actiepunt: {ex.Message}";
         }
     }
 }
