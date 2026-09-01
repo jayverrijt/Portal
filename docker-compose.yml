@@ -1,0 +1,55 @@
+services:
+  portal-db:
+    image: mysql:8.0
+    container_name: portal-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootsecretpassword
+      MYSQL_DATABASE: portal
+      MYSQL_USER: portal_user
+      MYSQL_PASSWORD: portal_db_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - portal-network
+
+  portal-api:
+    build:
+      context: .
+      dockerfile: ./Portal.API/Dockerfile
+    container_name: portal-api
+    restart: unless-stopped
+    depends_on:
+      - portal-db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=portal-db;Database=portal;User=portal_user;Password=portal_db_password;
+      - Jwt__Key=SuperSecretPortalJwtSigningKey2026!WithSufficientLength
+      - Jwt__Issuer=https://api.portal.jayverrijt.nl
+      - Jwt__Audience=https://portal.jayverrijt.nl
+    ports:
+      - "5190:8080"
+    networks:
+      - portal-network
+
+  portal-web:
+    build:
+      context: .
+      dockerfile: ./Portal.WebApp/Portal.WebApp/Dockerfile
+    container_name: portal-web
+    restart: unless-stopped
+    depends_on:
+      - portal-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    ports:
+      - "5220:8080"
+    networks:
+      - portal-network
+
+volumes:
+  mysql_data:
+
+networks:
+  portal-network:
+    driver: bridge
