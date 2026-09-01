@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "bU8iiWPuqDU=",
+  "dgSpecHash": "qAow2Nesh9g=",
   "success": true,
   "projectFilePath": "/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/Portal.WebApp.Client.csproj",
   "expectedPackageFiles": [
@@ -34,7 +34,7 @@
     "/Users/jayv/.nuget/packages/microsoft.jsinterop/8.0.22/microsoft.jsinterop.8.0.22.nupkg.sha512",
     "/Users/jayv/.nuget/packages/microsoft.jsinterop.webassembly/8.0.22/microsoft.jsinterop.webassembly.8.0.22.nupkg.sha512",
     "/Users/jayv/.nuget/packages/microsoft.net.illink.tasks/8.0.22/microsoft.net.illink.tasks.8.0.22.nupkg.sha512",
-    "/Users/jayv/.nuget/packages/microsoft.net.sdk.webassembly.pack/8.0.22/microsoft.net.sdk.webassembly.pack.8.0.22.nupkg.sha512",
+    "/Users/jayv/.nuget/packages/microsoft.net.sdk.webassembly.pack/10.0.0/microsoft.net.sdk.webassembly.pack.10.0.0.nupkg.sha512",
     "/Users/jayv/.nuget/packages/system.io.pipelines/8.0.0/system.io.pipelines.8.0.0.nupkg.sha512",
     "/Users/jayv/.nuget/packages/microsoft.netcore.app.runtime.mono.browser-wasm/8.0.22/microsoft.netcore.app.runtime.mono.browser-wasm.8.0.22.nupkg.sha512"
   ],
