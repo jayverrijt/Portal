@@ -1,0 +1,56 @@
+@page "/utils"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Gereedschap & Utils - Portal</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold m-0 text-nord-snow">🛠️ Gereedschap & Utils</h2>
+        <p class="text-nord-dim m-0">Snelle handige tools voor productiviteit, metingen en links</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- 1. URL SHORTENER -->
+    <div class="col-md-4">
+        <div class="card h-100 p-4 border-nord bg-nord-dark d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-inline-flex align-items-center justify-content-center p-3 bg-nord-surface rounded-circle mb-3">
+                    <i class="fa-solid fa-link text-nord-ice fs-4"></i>
+                </div>
+                <h5 class="fw-bold text-nord-snow mb-2">URL Shortener</h5>
+                <p class="text-nord-dim small">Maak snelle, handige korte links en beheer aliassen.</p>
+            </div>
+            <a href="utils/shortener" class="btn btn-primary btn-sm w-100 mt-3">Open Shortener</a>
+        </div>
+    </div>
+
+    <!-- 2. WEIGHT TRACKER -->
+    <div class="col-md-4">
+        <div class="card h-100 p-4 border-nord bg-nord-dark d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-inline-flex align-items-center justify-content-center p-3 bg-nord-surface rounded-circle mb-3">
+                    <i class="fa-solid fa-weight-scale text-nord-yellow fs-4"></i>
+                </div>
+                <h5 class="fw-bold text-nord-snow mb-2">Weight Tracker</h5>
+                <p class="text-nord-dim small">Log gewicht met tijdslot (ochtend/middag/avond) en analyseer de voortgangsgrafiek.</p>
+            </div>
+            <a href="utils/weight" class="btn btn-primary btn-sm w-100 mt-3">Open Weight Tracker</a>
+        </div>
+    </div>
+
+    <!-- 3. PASTEBIN / SCRATCHPAD -->
+    <div class="col-md-4">
+        <div class="card h-100 p-4 border-nord bg-nord-dark d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-inline-flex align-items-center justify-content-center p-3 bg-nord-surface rounded-circle mb-3">
+                    <i class="fa-solid fa-clipboard text-nord-green fs-4"></i>
+                </div>
+                <h5 class="fw-bold text-nord-snow mb-2">Quick Pastebin</h5>
+                <p class="text-nord-dim small">Tijdelijk klembord en scratchpad voor snelle logs, code en snippets.</p>
+            </div>
+            <a href="utils/pastebin" class="btn btn-primary btn-sm w-100 mt-3">Open Pastebin</a>
+        </div>
+    </div>
+</div>

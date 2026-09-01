@@ -370,6 +370,27 @@ namespace Portal.Data.Migrations
                     b.ToTable("Notes");
                 });
 
+            modelBuilder.Entity("Portal.Domain.Entities.PastebinBuffer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PastebinBuffers");
+                });
+
             modelBuilder.Entity("Portal.Domain.Entities.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -469,6 +490,61 @@ namespace Portal.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ScheduledTasks");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.ShortLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Clicks")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("OriginalUrl")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShortLinks");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.WeightLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("TimeSlot")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<double>("WeightKg")
+                        .HasColumnType("double");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WeightLogs");
                 });
 
             modelBuilder.Entity("BoardLabelKanbanCard", b =>

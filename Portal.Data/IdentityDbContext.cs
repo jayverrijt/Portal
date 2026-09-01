@@ -19,6 +19,10 @@ public class PortalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<BoardLabel> BoardLabels { get; set; } = null!;
     public DbSet<KanbanBoard> KanbanBoards { get; set; } = null!;
 
+    public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
+    public DbSet<ShortLink> ShortLinks => Set<ShortLink>();
+    public DbSet<PastebinBuffer> PastebinBuffers => Set<PastebinBuffer>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

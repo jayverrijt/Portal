@@ -1,0 +1,202 @@
+@page "/utils/shortener"
+@attribute [Authorize]
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using Portal.DTOs.Utils
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>URL Shortener - Portal</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="utils" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="fa-solid fa-arrow-left me-1"></i> Terug naar Utils
+        </a>
+        <h2 class="fw-bold m-0 text-nord-snow">🔗 URL Shortener</h2>
+        <p class="text-nord-dim m-0">Verkort lange URL's naar persistente shortlinks in de database</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- INVOER FORMULIER -->
+    <div class="col-lg-5">
+        <div class="card p-4 border-nord bg-nord-dark shadow-sm">
+            <h5 class="fw-bold text-nord-snow mb-3">Link Verkorten</h5>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger py-2 small mb-3">@_errorMessage</div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Originele URL</label>
+                <input type="url" class="form-control" placeholder="https://voorbeeld.nl/hele-lange-link" @bind="_originalUrl" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Aangepaste Slug / Alias (Optioneel)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-nord-surface border-nord text-nord-dim">go/</span>
+                    <input type="text" class="form-control" placeholder="mijn-link" @bind="_customSlug" />
+                </div>
+                <div class="text-nord-dim small mt-1" style="font-size: 0.75rem;">
+                    Resultaat: <strong class="text-nord-ice">https://portal.jayverrijt.nl/go/@(!string.IsNullOrWhiteSpace(_customSlug) ? _customSlug.Trim().ToLower() : "...")</strong>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-primary w-100" @onclick="CreateShortUrl" disabled="@_isSubmitting">
+                @if (_isSubmitting)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                    <span>Verkorten...</span>
+                }
+                else
+                {
+                    <i class="fa-solid fa-bolt me-1"></i>
+                    <span>Verkorten & Opslaan</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <!-- LIJST MET LINKS -->
+    <div class="col-lg-7">
+        <div class="card border-nord bg-nord-dark shadow-sm">
+            <div class="card-header bg-nord-card border-nord py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-nord-snow m-0">Aangemaakte Shortlinks (@_links.Count)</h5>
+                @if (_copiedToast)
+                {
+                    <span class="badge bg-nord-success text-nord-dark px-2 py-1">
+                        <i class="fa-solid fa-check me-1"></i> Gekopieerd!
+                    </span>
+                }
+            </div>
+            <div class="card-body p-0">
+                @if (_isLoading)
+                {
+                    <div class="p-4 text-center text-nord-dim">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Links laden...
+                    </div>
+                }
+                else if (!_links.Any())
+                {
+                    <div class="p-4 text-center text-nord-dim fst-italic">Nog geen shortlinks opgeslagen.</div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush" style="max-height: 420px; overflow-y: auto;">
+                        @foreach (var link in _links.OrderByDescending(l => l.CreatedAt))
+                        {
+                            <div class="list-group-item bg-nord-dark border-nord p-3 d-flex justify-content-between align-items-center">
+                                <div class="text-truncate me-3">
+                                    <div class="fw-bold text-nord-ice text-truncate">@link.ShortUrl</div>
+                                    <div class="text-nord-dim small text-truncate" style="max-width: 400px;">@link.OriginalUrl</div>
+                                    <span class="badge border border-nord bg-nord-surface text-nord-dim mt-1" style="font-size: 0.7rem;">
+                                        @link.Clicks clicks • @link.CreatedAt.ToLocalTime().ToString("dd MMM HH:mm")
+                                    </span>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-secondary" title="Kopieer shortlink" @onclick="() => CopyToClipboard(link.ShortUrl)">
+                                        <i class="fa-solid fa-copy"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Verwijderen" @onclick="() => DeleteLink(link.Id)">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ShortLinkDto> _links = new();
+    private string _originalUrl = string.Empty;
+    private string _customSlug = string.Empty;
+    private string? _errorMessage;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private bool _copiedToast;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLinks();
+    }
+
+    private async Task LoadLinks()
+    {
+        _isLoading = true;
+        try
+        {
+            _links = await Http.GetFromJsonAsync<List<ShortLinkDto>>("api/shortlinks") ?? new();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij ophalen links: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreateShortUrl()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_originalUrl) || !Uri.TryCreate(_originalUrl.Trim(), UriKind.Absolute, out _))
+        {
+            _errorMessage = "Voer een geldige URL in (inclusief http:// of https://).";
+            return;
+        }
+
+        _isSubmitting = true;
+        var dto = new CreateShortLinkDto
+        {
+            OriginalUrl = _originalUrl.Trim(),
+            Slug = string.IsNullOrWhiteSpace(_customSlug) ? null : _customSlug.Trim().ToLower().Replace(" ", "-")
+        };
+
+        try
+        {
+            var res = await Http.PostAsJsonAsync("api/shortlinks", dto);
+            if (res.IsSuccessStatusCode)
+            {
+                _originalUrl = string.Empty;
+                _customSlug = string.Empty;
+                await LoadLinks();
+            }
+            else
+            {
+                var errorText = await res.Content.ReadAsStringAsync();
+                _errorMessage = string.IsNullOrWhiteSpace(errorText) ? "Slug is al in gebruik of ongeldig." : errorText;
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        _copiedToast = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copiedToast = false;
+    }
+
+    private async Task DeleteLink(Guid id)
+    {
+        var res = await Http.DeleteAsync($"api/shortlinks/{id}");
+        if (res.IsSuccessStatusCode)
+        {
+            _links.RemoveAll(l => l.Id == id);
+        }
+    }
+}

@@ -1,0 +1,100 @@
+@page "/utils/pastebin"
+@attribute [Authorize]
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using Portal.DTOs.Utils
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Quick Pastebin - Portal</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="utils" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="fa-solid fa-arrow-left me-1"></i> Terug naar Utils
+        </a>
+        <h2 class="fw-bold m-0 text-nord-snow">📋 Quick Pastebin & Scratchpad</h2>
+        <p class="text-nord-dim m-0">Gekoppeld aan database met live debounce sync</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CopyAll">
+            <i class="fa-solid fa-copy me-1"></i> Alles Kopiëren
+        </button>
+        <button type="button" class="btn btn-outline-danger btn-sm" @onclick="ClearBuffer">
+            <i class="fa-solid fa-eraser me-1"></i> Wissen
+        </button>
+    </div>
+</div>
+
+<div class="card p-3 border-nord bg-nord-dark shadow-sm">
+    <textarea class="form-control font-monospace border-0 bg-nord-main text-nord-snow p-3"
+              style="height: 65vh; resize: none; line-height: 1.6;"
+              placeholder="Plak hier snel tijdelijke tekst, code of dumps (wordt live bewaard in de database)..."
+              value="@_buffer"
+              @oninput="HandleInput"></textarea>
+
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-nord">
+        <small class="text-nord-dim">
+            Karakters: <strong class="text-nord-ice">@_buffer.Length</strong> •
+            Status: <span class="@(_isSaving ? "text-nord-yellow" : "text-nord-green")">@(_isSaving ? "Opslaan in database..." : "Gesynchroniseerd met DB")</span>
+        </small>
+        @if (_copiedToast)
+        {
+            <span class="badge bg-nord-success text-nord-dark px-2 py-1">
+                <i class="fa-solid fa-check me-1"></i> Gekopieerd naar klembord!
+            </span>
+        }
+    </div>
+</div>
+
+@code {
+    private string _buffer = string.Empty;
+    private bool _isSaving;
+    private bool _copiedToast;
+    private CancellationTokenSource? _debounceCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var res = await Http.GetFromJsonAsync<PastebinDto>("api/pastebin");
+            _buffer = res?.Content ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fout bij ophalen pastebin: {ex.Message}");
+        }
+    }
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        _buffer = e.Value?.ToString() ?? string.Empty;
+        _isSaving = true;
+
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(500, _debounceCts.Token);
+            await Http.PostAsJsonAsync("api/pastebin", new PastebinDto { Content = _buffer });
+            _isSaving = false;
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private async Task CopyAll()
+    {
+        if (string.IsNullOrWhiteSpace(_buffer)) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _buffer);
+        _copiedToast = true;
+        await Task.Delay(2000);
+        _copiedToast = false;
+    }
+
+    private async Task ClearBuffer()
+    {
+        _buffer = string.Empty;
+        await Http.PostAsJsonAsync("api/pastebin", new PastebinDto { Content = string.Empty });
+    }
+}
