@@ -1,6 +1,4 @@
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,34 +6,57 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Portal.Data;
 using Portal.Data.Repositories;
-using Portal.Data.Services;
 using Portal.Domain.Entities;
 using Portal.Domain.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Connection string & DbContext met retry resiliency
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<PortalDbContext>(options =>
-    options.UseMySql(
-        connectionString,
-        new MySqlServerVersion(new Version(8, 0, 35)),
-        mySqlOptions => mySqlOptions.EnableRetryOnFailure()
-    ));
-
-// 2. Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+// 1. CORS CONFIGURATIE
+builder.Services.AddCors(options =>
 {
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequiredLength = 8;
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// 2. DATABASE CONFIGURATIE
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddDbContext<PortalDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+// 3. REPOSITORY & UNIT OF WORK REGISTRATIE
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// 4. ASP.NET CORE IDENTITY
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 6;
 })
+.AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<PortalDbContext>()
+.AddSignInManager()
 .AddDefaultTokenProviders();
 
-// 3. JWT Auth
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+// 5. JWT AUTHENTICATION CONFIGURATIE
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretPortalJwtSigningKey2026!WithSufficientLength";
+if (jwtKey.Length < 32)
+{
+    jwtKey = jwtKey.PadRight(32, 'X');
+}
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "https://api.portal.jayverrijt.nl";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "https://portal.jayverrijt.nl";
 
 builder.Services.AddAuthentication(options =>
 {
@@ -44,76 +65,38 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ClockSkew = TimeSpan.Zero
     };
 });
 
-// 4. CORS configuratie voor Blazor WebApp & Flutter Dev
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowPortalClients", policy =>
-    {
-        policy.WithOrigins(
-                "http://localhost:5220",
-                "https://localhost:7220",
-                "http://localhost:5200",
-                "http://localhost:3000",
-                "http://localhost:8080",
-                "http://localhost:5000"
-              )
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
+builder.Services.AddAuthorization();
 
-// 5. Dependency Injection
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddHostedService<TaskSchedulerBackgroundService>();
-
-// 6. Controllers met circulaire referentie-beveiliging & camelCase
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
-
+// 6. CONTROLLERS & SWAGGER
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// 7. Swagger met OpenAPI v1 spec & JWT
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddSwaggerGen(c =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Portal API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Title = "Portal API",
-        Version = "v1",
-        Description = "Second Brain API for Projects, Notes, Reminders and Scheduled Tasks"
-    });
-
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
+        Description = "JWT Authorization header met Bearer schema. Bv: 'Bearer {token}'",
         Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Voer je JWT token in."
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
     });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -131,16 +114,71 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// 7. DATABASE MIGRATIE & SEEDING
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
+    int maxRetries = 10;
+    for (int retry = 1; retry <= maxRetries; retry++)
+    {
+        try
+        {
+            logger.LogInformation("Poging {Retry}/{MaxRetries} om database te migreren...", retry, maxRetries);
+            var db = services.GetRequiredService<PortalDbContext>();
+            db.Database.Migrate();
+            logger.LogInformation("Database migraties succesvol toegepast!");
+
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var defaultEmail = "jay@famverrijt.nl";
+            var existingUser = userManager.FindByEmailAsync(defaultEmail).GetAwaiter().GetResult();
+
+            if (existingUser == null)
+            {
+                var newUser = new ApplicationUser
+                {
+                    UserName = defaultEmail,
+                    Email = defaultEmail,
+                    EmailConfirmed = true
+                };
+
+                var createResult = userManager.CreateAsync(newUser, "Welkom123!").GetAwaiter().GetResult();
+                if (createResult.Succeeded)
+                {
+                    logger.LogInformation("Default gebruiker '{Email}' succesvol aangemaakt.", defaultEmail);
+                }
+                else
+                {
+                    logger.LogWarning("Kon default gebruiker niet aanmaken: {Errors}", 
+                        string.Join(", ", createResult.Errors.Select(e => e.Description)));
+                }
+            }
+            break;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("Database nog niet gereed (Poging {Retry}): {Message}", retry, ex.Message);
+            if (retry == maxRetries)
+            {
+                logger.LogError(ex, "Database migratie mislukt na {MaxRetries} pogingen.", maxRetries);
+            }
+            else
+            {
+                Thread.Sleep(3000);
+            }
+        }
+    }
+}
+
+// 8. HTTP PIPELINE
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-// CORS vóór Authentication/Authorization
-app.UseCors("AllowPortalClients");
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

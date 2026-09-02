@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -7,23 +8,31 @@ namespace Portal.WebApp.Client.Services;
 
 public class CustomAuthStateProvider : AuthenticationStateProvider
 {
-    private readonly IJSRuntime _js;
+    private readonly IJSRuntime? _js;
+    private readonly HttpClient _httpClient;
     private readonly AuthenticationState _anonymous = new(new ClaimsPrincipal(new ClaimsIdentity()));
     private const string TokenKey = "authToken";
 
-    public CustomAuthStateProvider(IJSRuntime js)
+    public CustomAuthStateProvider(IJSRuntime? js, HttpClient httpClient)
     {
         _js = js;
+        _httpClient = httpClient;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+        if (_js == null)
+        {
+            return _anonymous;
+        }
+
         try
         {
             var token = await _js.InvokeAsync<string?>("localStorage.getItem", TokenKey);
 
             if (string.IsNullOrWhiteSpace(token))
             {
+                _httpClient.DefaultRequestHeaders.Authorization = null;
                 return _anonymous;
             }
 
@@ -36,10 +45,12 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
                 if (expDate < DateTime.UtcNow)
                 {
                     await _js.InvokeVoidAsync("localStorage.removeItem", TokenKey);
+                    _httpClient.DefaultRequestHeaders.Authorization = null;
                     return _anonymous;
                 }
             }
 
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var identity = new ClaimsIdentity(claims, "jwt", ClaimTypes.Name, ClaimTypes.Role);
             return new AuthenticationState(new ClaimsPrincipal(identity));
         }
@@ -49,16 +60,25 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
         }
     }
 
-    public async Task SetTokenAsync(string? token)
+    public virtual async Task SetTokenAsync(string? token)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            await _js.InvokeVoidAsync("localStorage.removeItem", TokenKey);
+            if (_js != null)
+            {
+                try { await _js.InvokeVoidAsync("localStorage.removeItem", TokenKey); } catch { }
+            }
+            _httpClient.DefaultRequestHeaders.Authorization = null;
             NotifyAuthenticationStateChanged(Task.FromResult(_anonymous));
         }
         else
         {
-            await _js.InvokeVoidAsync("localStorage.setItem", TokenKey, token);
+            if (_js != null)
+            {
+                try { await _js.InvokeVoidAsync("localStorage.setItem", TokenKey, token); } catch { }
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var claims = ParseClaimsFromJwt(token).ToList();
             var identity = new ClaimsIdentity(claims, "jwt", ClaimTypes.Name, ClaimTypes.Role);
             var principal = new ClaimsPrincipal(identity);

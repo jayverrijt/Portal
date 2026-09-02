@@ -70,7 +70,7 @@
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
 
-    private LoginDto _loginModel = new();
+    private LoginDto _loginModel = new() { Email = "jay@famverrijt.nl" };
     private bool _isLoading;
     private string? _errorMessage;
 
@@ -95,29 +95,34 @@
                     }
 
                     var destination = "/";
-                    if (!string.IsNullOrWhiteSpace(ReturnUrl) && ReturnUrl != "/" && ReturnUrl != "%2F")
+                    if (!string.IsNullOrWhiteSpace(ReturnUrl))
                     {
-                        destination = ReturnUrl.StartsWith("/") ? ReturnUrl : "/" + ReturnUrl;
+                        var unescaped = Uri.UnescapeDataString(ReturnUrl);
+                        if (!string.IsNullOrWhiteSpace(unescaped) && unescaped != "/" && !unescaped.Contains("login"))
+                        {
+                            destination = unescaped.StartsWith("/") ? unescaped : "/" + unescaped;
+                        }
                     }
 
-                    Navigation.NavigateTo(destination);
+                    // Client-side navigatie zonder force reload, zodat WASM de state behoudt
+                    Navigation.NavigateTo(destination, forceLoad: false);
                 }
                 else
                 {
                     _errorMessage = "Geen geldig token ontvangen van de server.";
+                    _isLoading = false;
                 }
             }
             else
             {
-                _errorMessage = "Onjuist e-mailadres of wachtwoord.";
+                var errorText = await response.Content.ReadAsStringAsync();
+                _errorMessage = string.IsNullOrWhiteSpace(errorText) ? "Onjuist e-mailadres of wachtwoord." : errorText;
+                _isLoading = false;
             }
         }
         catch (Exception ex)
         {
             _errorMessage = $"Verbindingsfout met API: {ex.Message}";
-        }
-        finally
-        {
             _isLoading = false;
         }
     }
