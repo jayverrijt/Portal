@@ -1,0 +1,354 @@
+@page "/budget"
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using Portal.Domain.Entities
+@using Portal.DTOs.Budget
+@attribute [Authorize]
+@inject HttpClient Http
+
+<PageTitle>Budget & Financiën - Portal</PageTitle>
+
+<div class="container-fluid p-4" data-bwignore="true">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-nord-snow m-0"><i class="fa-solid fa-wallet text-nord-accent me-2"></i>Financieel Overzicht</h2>
+            <p class="text-nord-dim small m-0">Inzicht in rekeningen, spaargeld, beleggingen en vaste lasten</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-info btn-sm" @onclick="OpenAccountModal">
+                <i class="fa-solid fa-plus me-1"></i> Rekening Toevoegen
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" @onclick="OpenEntryModal">
+                <i class="fa-solid fa-plus me-1"></i> Vaste Post Toevoegen
+            </button>
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="d-flex justify-content-center p-5">
+            <div class="spinner-border text-info" role="status"></div>
+        </div>
+    }
+    else if (_overview != null)
+    {
+        <!-- KPI Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card bg-nord-dark border-nord p-3">
+                    <span class="text-nord-dim small">Totaal Vermogen</span>
+                    <h3 class="fw-bold text-nord-snow mt-1">€ @_overview.TotalBalance.ToString("N2")</h3>
+                    <div class="d-flex gap-2 small text-nord-dim mt-2">
+                        <span>Spaar: €@_overview.TotalSavings.ToString("N0")</span> |
+                        <span>Belegd: €@_overview.TotalInvestments.ToString("N0")</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-nord-dark border-nord p-3">
+                    <span class="text-nord-dim small">Maandelijkse Inkomsten</span>
+                    <h3 class="fw-bold text-success mt-1">+€ @_overview.TotalMonthlyIncome.ToString("N2")</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-nord-dark border-nord p-3">
+                    <span class="text-nord-dim small">Maandelijkse Vaste Lasten</span>
+                    <h3 class="fw-bold text-danger mt-1">-€ @_overview.TotalMonthlyExpenses.ToString("N2")</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-nord-dark border-nord p-3">
+                    <span class="text-nord-dim small">Netto Maandresultaat</span>
+                    <h3 class="fw-bold @(_overview.NetMonthlyCashflow >= 0 ? "text-success" : "text-danger") mt-1">
+                        € @_overview.NetMonthlyCashflow.ToString("N2")
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Rekeningen -->
+            <div class="col-lg-5">
+                <div class="card bg-nord-dark border-nord h-100">
+                    <div class="card-header bg-transparent border-nord py-3">
+                        <h5 class="fw-bold text-nord-snow m-0">Rekeningen & Saldi</h5>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        @foreach (var acc in _overview.Accounts)
+                        {
+                            <div class="list-group-item bg-transparent border-nord text-nord-snow d-flex justify-content-between align-items-center py-3" @key="acc.Id">
+                                <div>
+                                    <span class="badge @GetBadgeClass(acc.Type) me-2">@acc.Type</span>
+                                    <strong>@acc.Name</strong>
+                                    @if (!string.IsNullOrEmpty(acc.Iban))
+                                    {
+                                        <div class="text-nord-dim small">@acc.Iban</div>
+                                    }
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold fs-5">€ @acc.CurrentBalance.ToString("N2")</div>
+                                    <button type="button" class="btn btn-link btn-sm text-nord-accent p-0 text-decoration-none"
+                                            @onclick="() => StartEditBalance(acc)">
+                                        Saldo aanpassen
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vaste Maandelijkse Posten -->
+            <div class="col-lg-7">
+                <div class="card bg-nord-dark border-nord h-100">
+                    <div class="card-header bg-transparent border-nord py-3">
+                        <h5 class="fw-bold text-nord-snow m-0">Maandelijkse Vaste Posten</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 bg-transparent">
+                            <thead>
+                                <tr class="text-nord-dim small">
+                                    <th>Dag</th>
+                                    <th>Omschrijving</th>
+                                    <th>Categorie</th>
+                                    <th class="text-end">Bedrag</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in _overview.MonthlyEntries)
+                                {
+                                    <tr @key="entry.Id">
+                                        <td>@entry.DueDayOfMonth e</td>
+                                        <td>@entry.Description</td>
+                                        <td><span class="badge bg-secondary">@entry.Category</span></td>
+                                        <td class="text-end fw-bold @(entry.Amount >= 0 ? "text-success" : "text-danger")">
+                                            @(entry.Amount >= 0 ? "+" : "")€ @entry.Amount.ToString("N2")
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-link btn-sm text-danger p-0" @onclick="() => DeleteEntry(entry.Id)">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* Modal: Rekening Toevoegen *@
+@if (_showAccountModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);" data-bwignore="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-nord-dark border-nord text-nord-snow">
+                <div class="modal-header border-nord">
+                    <h5 class="modal-title">Rekening Toevoegen</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showAccountModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small">Naam</label>
+                        <input type="text" class="form-control" autocomplete="off" @bind="_newAccountName" placeholder="bijv. Rabobank Betaal" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Type</label>
+                        <select class="form-select" @bind="_newAccountType">
+                            <option value="@AccountType.Checking">Betaalrekening</option>
+                            <option value="@AccountType.Savings">Spaarrekening</option>
+                            <option value="@AccountType.Investment">Beleggingsrekening</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Huidig Saldo (€)</label>
+                        <input type="number" step="0.01" class="form-control" autocomplete="off" @bind="_newAccountBalance" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">IBAN (optioneel)</label>
+                        <input type="text" class="form-control" autocomplete="off" @bind="_newAccountIban" placeholder="NL00BANK0123456789" />
+                    </div>
+                </div>
+                <div class="modal-footer border-nord">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showAccountModal = false">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveAccount">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Modal: Saldo Bijwerken *@
+@if (_selectedAccountForBalance != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);" data-bwignore="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-nord-dark border-nord text-nord-snow">
+                <div class="modal-header border-nord">
+                    <h5 class="modal-title">Saldo Aanpassen (@_selectedAccountForBalance.Name)</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _selectedAccountForBalance = null"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small">Nieuw Saldo (€)</label>
+                    <input type="number" step="0.01" class="form-control" autocomplete="off" @bind="_editBalanceValue" />
+                </div>
+                <div class="modal-footer border-nord">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _selectedAccountForBalance = null">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveBalance">Bijwerken</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Modal: Vaste Post Toevoegen *@
+@if (_showEntryModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);" data-bwignore="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-nord-dark border-nord text-nord-snow">
+                <div class="modal-header border-nord">
+                    <h5 class="modal-title">Vaste Post Toevoegen</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showEntryModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small">Omschrijving</label>
+                        <input type="text" class="form-control" autocomplete="off" @bind="_newEntryDesc" placeholder="bijv. Salaris of Zorgverzekering" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Bedrag (€) (negatief voor uitgave, bv -120)</label>
+                        <input type="number" step="0.01" class="form-control" autocomplete="off" @bind="_newEntryAmount" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Categorie</label>
+                        <input type="text" class="form-control" autocomplete="off" @bind="_newEntryCategory" placeholder="Wonen, Vervoer, Verzekering, Inkomsten..." />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Dag van de maand (1 - 31)</label>
+                        <input type="number" min="1" max="31" class="form-control" autocomplete="off" @bind="_newEntryDay" />
+                    </div>
+                </div>
+                <div class="modal-footer border-nord">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showEntryModal = false">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveEntry">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private BudgetOverviewDto? _overview;
+    private bool _loading = true;
+
+    private bool _showAccountModal = false;
+    private string _newAccountName = "";
+    private AccountType _newAccountType = AccountType.Checking;
+    private decimal _newAccountBalance;
+    private string? _newAccountIban;
+
+    private BankAccountDto? _selectedAccountForBalance;
+    private decimal _editBalanceValue;
+
+    private bool _showEntryModal = false;
+    private string _newEntryDesc = "";
+    private decimal _newEntryAmount;
+    private string _newEntryCategory = "Vast";
+    private int _newEntryDay = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _overview = await Http.GetFromJsonAsync<BudgetOverviewDto>("api/budget/overview");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading budget: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OpenAccountModal() => _showAccountModal = true;
+    private void OpenEntryModal() => _showEntryModal = true;
+
+    private void StartEditBalance(BankAccountDto acc)
+    {
+        _selectedAccountForBalance = acc;
+        _editBalanceValue = acc.CurrentBalance;
+    }
+
+    private async Task SaveAccount()
+    {
+        if (string.IsNullOrWhiteSpace(_newAccountName)) return;
+
+        var dto = new CreateBankAccountDto(_newAccountName, _newAccountType, _newAccountBalance, _newAccountIban);
+        var res = await Http.PostAsJsonAsync("api/budget/accounts", dto);
+        if (res.IsSuccessStatusCode)
+        {
+            _showAccountModal = false;
+            _newAccountName = "";
+            _newAccountBalance = 0;
+            _newAccountIban = null;
+            await LoadData();
+        }
+    }
+
+    private async Task SaveBalance()
+    {
+        if (_selectedAccountForBalance == null) return;
+
+        var res = await Http.PatchAsJsonAsync($"api/budget/accounts/{_selectedAccountForBalance.Id}/balance", new UpdateAccountBalanceDto(_editBalanceValue));
+        if (res.IsSuccessStatusCode)
+        {
+            _selectedAccountForBalance = null;
+            await LoadData();
+        }
+    }
+
+    private async Task SaveEntry()
+    {
+        if (string.IsNullOrWhiteSpace(_newEntryDesc)) return;
+
+        var dto = new CreateMonthlyEntryDto(_newEntryDesc, _newEntryAmount, _newEntryCategory, _newEntryDay, null);
+        var res = await Http.PostAsJsonAsync("api/budget/entries", dto);
+        if (res.IsSuccessStatusCode)
+        {
+            _showEntryModal = false;
+            _newEntryDesc = "";
+            _newEntryAmount = 0;
+            await LoadData();
+        }
+    }
+
+    private async Task DeleteEntry(Guid id)
+    {
+        var res = await Http.DeleteAsync($"api/budget/entries/{id}");
+        if (res.IsSuccessStatusCode)
+        {
+            await LoadData();
+        }
+    }
+
+    private string GetBadgeClass(AccountType type) => type switch
+    {
+        AccountType.Checking => "bg-primary",
+        AccountType.Savings => "bg-success",
+        AccountType.Investment => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}

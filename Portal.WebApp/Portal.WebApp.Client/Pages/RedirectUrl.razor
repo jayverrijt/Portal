@@ -1,0 +1,76 @@
+@page "/go/{Code}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Doorverbinden...</PageTitle>
+
+<div class="d-flex flex-column justify-content-center align-items-center vh-100 bg-nord-main text-nord-snow">
+    @if (_loading)
+    {
+        <div class="spinner-border text-nord-ice mb-3" role="status"></div>
+        <h5>Je wordt doorgestuurd...</h5>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="card bg-nord-dark border-nord p-4 text-center" style="max-width: 450px;">
+            <i class="fa-solid fa-triangle-exclamation text-nord-yellow fs-1 mb-3"></i>
+            <h4 class="fw-bold">Link niet gevonden</h4>
+            <p class="text-nord-dim small">@_error</p>
+            <a href="/" class="btn btn-primary mt-2">Terug naar Dashboard</a>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Code { get; set; } = string.Empty;
+
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Code))
+        {
+            _error = "Geen shortcode opgegeven.";
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            // Vraag aan de API naar welk doel deze code moet wijzen
+            var response = await Http.GetAsync($"api/shortener/{Code}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var destinationUrl = await response.Content.ReadAsStringAsync();
+                destinationUrl = destinationUrl.Trim().Trim('"'); // Strip eventuele JSON quotes
+
+                if (!string.IsNullOrWhiteSpace(destinationUrl))
+                {
+                    // Zorg voor een geldige http/https scheme zodat de browser niet intern blijft zoeken
+                    if (!destinationUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                        !destinationUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        destinationUrl = "https://" + destinationUrl;
+                    }
+
+                    // forceLoad: true is essentieel om de Blazor SPA te verlaten naar de externe website!
+                    Navigation.NavigateTo(destinationUrl, forceLoad: true);
+                    return;
+                }
+            }
+
+            _error = $"Geen koppeling gevonden voor code '{Code}'.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Fout bij ophalen van bestemming: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

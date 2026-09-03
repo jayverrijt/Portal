@@ -1,6 +1,5 @@
 /Users/jayv/Projects/Portal/Portal.API/bin/Debug/net8.0/appsettings.Development.json
 /Users/jayv/Projects/Portal/Portal.API/bin/Debug/net8.0/appsettings.json
-/Users/jayv/Projects/Portal/Portal.API/bin/Debug/net8.0/Portal.API.staticwebassets.endpoints.json
 /Users/jayv/Projects/Portal/Portal.API/bin/Debug/net8.0/Portal.API
 /Users/jayv/Projects/Portal/Portal.API/bin/Debug/net8.0/Portal.API.deps.json
 /Users/jayv/Projects/Portal/Portal.API/bin/Debug/net8.0/Portal.API.runtimeconfig.json
@@ -110,7 +109,6 @@
 /Users/jayv/Projects/Portal/Portal.API/bin/Debug/net8.0/Portal.pdb
 /Users/jayv/Projects/Portal/Portal.API/bin/Debug/net8.0/Portal.Data.pdb
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.csproj.AssemblyReference.cache
-/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/rpswa.dswa.cache.json
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.GeneratedMSBuildEditorConfig.editorconfig
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.AssemblyInfoInputs.cache
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.AssemblyInfo.cs
@@ -118,15 +116,14 @@
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.MvcApplicationPartsAssemblyInfo.cs
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.MvcApplicationPartsAssemblyInfo.cache
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.sourcelink.json
-/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/rjimswa.dswa.cache.json
-/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/rjsmrazor.dswa.cache.json
-/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/rjsmcshtml.dswa.cache.json
-/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/scopedcss/bundle/Portal.API.styles.css
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets.build.json
-/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets.build.json.cache
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets.development.json
-/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets.build.endpoints.json
-/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/swae.build.ex.cache
+/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets/msbuild.Portal.API.Microsoft.AspNetCore.StaticWebAssets.props
+/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets/msbuild.build.Portal.API.props
+/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.Portal.API.props
+/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.Portal.API.props
+/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/staticwebassets.pack.json
+/Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/scopedcss/bundle/Portal.API.styles.css
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.csproj.Up2Date
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/Portal.API.dll
 /Users/jayv/Projects/Portal/Portal.API/obj/Debug/net8.0/refint/Portal.API.dll
