@@ -26,6 +26,7 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
+    overflow: hidden; /* Voorkomt dubbele root-scrollbars */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -213,13 +214,17 @@ a:hover {
 }
 
 /* ================= SIDEBAR & NAVIGATION ================= */
-.sidebar-container {
-    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-    border-right: 1px solid rgba(76, 86, 106, 0.45);
+.sidebar-expanded {
+    width: 250px;
+    min-width: 250px;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.width-expanded  { width: 250px; min-width: 250px; }
-.width-collapsed { width: 75px;  min-width: 75px;  }
+.sidebar-collapsed {
+    width: 75px;
+    min-width: 75px;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 .nav-pills .nav-link {
     color: #9aa5b8;
@@ -237,11 +242,12 @@ a:hover {
     font-weight: 600;
 }
 
-.nav-pills .nav-link.active i {
+.nav-pills .nav-link.active i,
+.nav-pills .nav-link.active span {
     color: var(--nord0) !important;
 }
 
-/* ================= FLOWBOARD CANVAS & SCROLLBARS ================= */
+/* ================= FLOWBOARD CANVAS ================= */
 .flowboard-container {
     display: flex;
     flex-direction: column;
@@ -291,32 +297,29 @@ a:hover {
     transform: translateY(-1px);
 }
 
-/* Custom Scrollbars */
-.flowboard-canvas::-webkit-scrollbar,
-.flowboard-card-list::-webkit-scrollbar,
-.overflow-y-auto::-webkit-scrollbar {
+/* ================= SCROLLBARS (WEBKIT & FIREFOX) ================= */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--nord3) var(--nord0);
+}
+
+::-webkit-scrollbar {
+    width: 8px;
     height: 8px;
-    width: 6px;
 }
 
-.flowboard-canvas::-webkit-scrollbar-track,
-.flowboard-card-list::-webkit-scrollbar-track,
-.overflow-y-auto::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
     background: var(--nord0);
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
-.flowboard-canvas::-webkit-scrollbar-thumb,
-.flowboard-card-list::-webkit-scrollbar-thumb,
-.overflow-y-auto::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
     background: var(--nord3);
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
-.flowboard-canvas::-webkit-scrollbar-thumb:hover,
-.flowboard-card-list::-webkit-scrollbar-thumb:hover,
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-    background: var(--nord9);
+::-webkit-scrollbar-thumb:hover {
+    background: var(--nord10);
 }
 
 /* ================= SYSTEM & ALERTS ================= */
@@ -331,4 +334,20 @@ a:hover {
     background-color: var(--nord11) !important;
     border-color: var(--nord11) !important;
     color: var(--nord6) !important;
+}
+
+/* Zorg dat alle Blazor root-elementen meeschalen naar 100% hoogte */
+html, body, app, Routes, [b-app] {
+    height: 100% !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+}
+
+/* Geforceerde content scroll container */
+.portal-content-scroll {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow-y: scroll !important; /* 'scroll' in plaats van 'auto' dwingt de renderer tot scrollen */
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
 }
