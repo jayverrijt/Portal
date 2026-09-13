@@ -4,8 +4,8 @@ namespace Portal.Domain.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
-    IRepository<Project> Projects { get; }
-    IRepository<Note> Notes { get; }
+    IProjectRepository Projects { get; }
+    INoteRepository Notes { get; }
     IRepository<Reminder> Reminders { get; }
     IRepository<ScheduledTask> ScheduledTasks { get; }
     IRepository<KanbanCard> KanbanCards { get; }
