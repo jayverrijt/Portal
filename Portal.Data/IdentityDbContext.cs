@@ -18,7 +18,9 @@ public class PortalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<KanbanCard> KanbanCards { get; set; } = null!;
     public DbSet<BoardLabel> BoardLabels { get; set; } = null!;
     public DbSet<KanbanBoard> KanbanBoards { get; set; } = null!;
-
+    public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
+    public DbSet<MonthlyBudgetEntry> MonthlyBudgetEntries => Set<MonthlyBudgetEntry>();
+    public DbSet<ShortenedUrl> ShortenedUrls => Set<ShortenedUrl>();
     public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
     public DbSet<ShortLink> ShortLinks => Set<ShortLink>();
     public DbSet<PastebinBuffer> PastebinBuffers => Set<PastebinBuffer>();

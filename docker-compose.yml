@@ -11,16 +11,13 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - portal-network
-
+      - portal-internal
   portal-api:
     build:
       context: .
       dockerfile: ./Portal.API/Dockerfile
     container_name: portal-api
     restart: unless-stopped
-    depends_on:
-      - portal-db
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Server=portal-db;Database=portal;User=portal_user;Password=portal_db_password;
@@ -30,8 +27,8 @@ services:
     ports:
       - "5190:8080"
     networks:
-      - portal-network
-
+      - portal-internal
+      - proxy-web
   portal-web:
     build:
       context: .
@@ -42,14 +39,18 @@ services:
       - portal-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - ApiUrl=http://portal-api:8080/
     ports:
       - "5220:8080"
     networks:
-      - portal-network
-
+      - portal-internal
+      - proxy-web
 volumes:
   mysql_data:
 
 networks:
-  portal-network:
+  portal-internal:
     driver: bridge
+  proxy-web:
+    external: true
+    name: coreapps_web-network

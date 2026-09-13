@@ -1,22 +1,25 @@
 @namespace Portal.WebApp.Client.Layout
 @inherits LayoutComponentBase
-@using Portal.WebApp.Client.Layout
-@using Portal.WebApp.Client.Components
 
-<div class="app-layout d-flex vh-100 overflow-hidden bg-nord-dark">
-    <!-- NORD SIDEBAR -->
-    <aside class="sidebar-container bg-nord-sidebar text-white flex-shrink-0 @(_isSidebarCollapsed ? "width-collapsed" : "width-expanded")">
-        <NavMenu IsCollapsed="_isSidebarCollapsed" OnToggleSidebar="(val) => _isSidebarCollapsed = val" />
+<div class="d-flex w-100 h-100" style="height: 100vh; max-height: 100vh; overflow: hidden;">
+    <!-- SIDEBAR -->
+    <aside class="@(IsSidebarCollapsed ? "sidebar-collapsed" : "sidebar-expanded") flex-shrink-0 h-100" style="height: 100vh; overflow-y: auto;">
+        <NavMenu IsCollapsed="@IsSidebarCollapsed" OnToggleSidebar="HandleSidebarToggle" />
     </aside>
 
-    <!-- MAIN CONTENT VIEWPORT -->
-    <main class="main-content-viewport flex-grow-1 d-flex flex-column h-100 overflow-hidden bg-nord-main">
-        <div class="content-body flex-grow-1 overflow-y-auto p-4 text-nord-snow">
+    <!-- MAIN SCROLLABLE CONTENT -->
+    <main class="flex-grow-1 h-100 portal-content-scroll" style="min-width: 0;">
+        <div class="container-fluid p-4" style="padding-bottom: 120px !important;">
             @Body
         </div>
     </main>
 </div>
 
 @code {
-    private bool _isSidebarCollapsed = false;
+    private bool IsSidebarCollapsed = false;
+
+    private void HandleSidebarToggle(bool collapsed)
+    {
+        IsSidebarCollapsed = collapsed;
+    }
 }

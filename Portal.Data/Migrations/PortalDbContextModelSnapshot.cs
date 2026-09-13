@@ -242,6 +242,40 @@ namespace Portal.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Portal.Domain.Entities.BankAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("CurrentBalance")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("Iban")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BankAccounts");
+                });
+
             modelBuilder.Entity("Portal.Domain.Entities.BoardLabel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -337,6 +371,46 @@ namespace Portal.Data.Migrations
                     b.HasIndex("BoardId");
 
                     b.ToTable("KanbanCards");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.MonthlyBudgetEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<Guid?>("BankAccountId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("DueDayOfMonth")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BankAccountId");
+
+                    b.ToTable("MonthlyBudgetEntries");
                 });
 
             modelBuilder.Entity("Portal.Domain.Entities.Note", b =>
@@ -520,6 +594,37 @@ namespace Portal.Data.Migrations
                     b.ToTable("ShortLinks");
                 });
 
+            modelBuilder.Entity("Portal.Domain.Entities.ShortenedUrl", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Clicks")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OriginalUrl")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShortenedUrls");
+                });
+
             modelBuilder.Entity("Portal.Domain.Entities.WeightLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -642,6 +747,15 @@ namespace Portal.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("Portal.Domain.Entities.MonthlyBudgetEntry", b =>
+                {
+                    b.HasOne("Portal.Domain.Entities.BankAccount", "BankAccount")
+                        .WithMany()
+                        .HasForeignKey("BankAccountId");
+
+                    b.Navigation("BankAccount");
                 });
 
             modelBuilder.Entity("Portal.Domain.Entities.Note", b =>
