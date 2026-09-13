@@ -1058,11 +1058,6 @@
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/2eiefct552-{0}-tptq2av103-tptq2av103.gz
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/w19ru5cwjp-{0}-lfu7j35m59-lfu7j35m59.gz
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/p1yr0155ve-{0}-oyz0vx2fzb-oyz0vx2fzb.gz
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/sdzm66ev4w-{0}-lfzd2nxkgk-lfzd2nxkgk.gz
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/a9wxwem3e3-{0}-zg9b2zjgwq-zg9b2zjgwq.gz
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/pyfn19a9le-{0}-dny52s9vgg-dny52s9vgg.gz
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/d98a44l4rn-{0}-66cf95mcb2-66cf95mcb2.gz
-/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/1gtl01irzo-{0}-2nnscpcnzg-2nnscpcnzg.gz
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/staticwebassets.build.json
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/staticwebassets.build.json.cache
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/staticwebassets.development.json
@@ -1073,3 +1068,8 @@
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/refint/Portal.WebApp.Client.dll
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/Portal.WebApp.Client.pdb
 /Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/ref/Portal.WebApp.Client.dll
+/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/sdzm66ev4w-{0}-12l4f3no4h-12l4f3no4h.gz
+/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/a9wxwem3e3-{0}-xbm6tdnl3p-xbm6tdnl3p.gz
+/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/pyfn19a9le-{0}-f1mor6c44y-f1mor6c44y.gz
+/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/d98a44l4rn-{0}-n43z3qz7sf-n43z3qz7sf.gz
+/Users/jayv/Projects/Portal/Portal.WebApp/Portal.WebApp.Client/obj/Debug/net8.0/compressed/1gtl01irzo-{0}-rgzysccnz1-rgzysccnz1.gz

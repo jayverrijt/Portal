@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Portal.Domain.Entities;
 using Portal.Domain.Interfaces;
@@ -14,18 +16,39 @@ namespace Portal.API.Controllers;
 public class ProjectController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public ProjectController(IUnitOfWork unitOfWork)
+    public ProjectController(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager)
     {
         _unitOfWork = unitOfWork;
+        _userManager = userManager;
     }
+
+    private string? GetCurrentUserId() =>
+        User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
     {
-        var projects = (await _unitOfWork.Projects.GetAllAsync()).ToList();
-        var allNotes = (await _unitOfWork.Notes.GetAllAsync()).ToList();
-        var allReminders = (await _unitOfWork.Reminders.GetAllAsync()).ToList();
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie. Log opnieuw in." });
+
+        // Alleen projecten van de user zelf óf die expliciet met hem gedeeld zijn
+        var allProjects = await _unitOfWork.Projects.GetAllAsync();
+        var projects = allProjects
+            .Where(p => p.OwnerId == currentUserId || p.SharedWithUsers.Any(u => u.Id == currentUserId))
+            .ToList();
+
+        var allowedProjectIds = projects.Select(p => p.Id).ToHashSet();
+
+        var allNotes = (await _unitOfWork.Notes.GetAllAsync())
+            .Where(n => n.ProjectId.HasValue && allowedProjectIds.Contains(n.ProjectId.Value))
+            .ToList();
+
+        var allReminders = (await _unitOfWork.Reminders.GetAllAsync())
+            .Where(r => r.ProjectId.HasValue && allowedProjectIds.Contains(r.ProjectId.Value))
+            .ToList();
 
         var dtos = projects.Select(p => new ProjectDto
         {
@@ -61,8 +84,17 @@ public class ProjectController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProjectDto>> GetProject(Guid id)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
         var project = await _unitOfWork.Projects.GetByIdAsync(id);
-        if (project == null) return NotFound("Project niet gevonden.");
+        if (project == null) 
+            return NotFound(new { message = "Project niet gevonden." });
+
+        // Autorisatiecheck
+        if (project.OwnerId != currentUserId && !project.SharedWithUsers.Any(u => u.Id == currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Je hebt geen toegang tot dit project." });
 
         var notes = await _unitOfWork.Notes.FindAsync(n => n.ProjectId == id);
         var reminders = await _unitOfWork.Reminders.FindAsync(r => r.ProjectId == id);
@@ -101,11 +133,19 @@ public class ProjectController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ProjectDto>> CreateProject(CreateProjectDto dto)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            return BadRequest(new { message = "Titel van het project is verplicht." });
+
         var project = new Project
         {
-            Title = dto.Title,
+            Title = dto.Title.Trim(),
             Description = dto.Description,
-            RepositoryUrl = dto.RepositoryUrl
+            RepositoryUrl = dto.RepositoryUrl,
+            OwnerId = currentUserId
         };
 
         await _unitOfWork.Projects.AddAsync(project);
@@ -121,17 +161,60 @@ public class ProjectController : ControllerBase
         });
     }
 
+    [HttpPost("{projectId:guid}/share")]
+    public async Task<IActionResult> ShareProject(Guid projectId, [FromBody] ShareProjectRequest request)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
+        var project = await _unitOfWork.Projects.GetByIdAsync(projectId);
+        if (project == null)
+            return NotFound(new { message = "Project niet gevonden." });
+
+        if (project.OwnerId != currentUserId)
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Alleen de eigenaar kan dit project delen." });
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+            return BadRequest(new { message = "E-mailadres is verplicht." });
+
+        var targetUser = await _userManager.FindByEmailAsync(request.Email.Trim());
+        if (targetUser == null)
+            return NotFound(new { message = $"Geen account gevonden met e-mailadres '{request.Email}'." });
+
+        if (targetUser.Id == currentUserId)
+            return BadRequest(new { message = "Je bent al eigenaar van dit project." });
+
+        if (project.SharedWithUsers.Any(u => u.Id == targetUser.Id))
+            return BadRequest(new { message = $"Dit project is al gedeeld met {targetUser.Email}." });
+
+        project.SharedWithUsers.Add(targetUser);
+        _unitOfWork.Projects.Update(project);
+        await _unitOfWork.CompleteAsync();
+
+        return Ok(new { message = $"Project succesvol gedeeld met {targetUser.Email}." });
+    }
+
     [HttpPost("{projectId:guid}/notes")]
     public async Task<ActionResult<NoteDto>> AddNoteToProject(Guid projectId, CreateNoteForProjectDto dto)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
         var project = await _unitOfWork.Projects.GetByIdAsync(projectId);
-        if (project == null) return NotFound("Project niet gevonden.");
+        if (project == null) 
+            return NotFound(new { message = "Project niet gevonden." });
+
+        if (project.OwnerId != currentUserId && !project.SharedWithUsers.Any(u => u.Id == currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Geen schrijfrechten op dit project." });
 
         var note = new Note
         {
             Title = dto.Title,
             Content = dto.Content,
-            ProjectId = projectId
+            ProjectId = projectId,
+            OwnerId = currentUserId
         };
 
         await _unitOfWork.Notes.AddAsync(note);
@@ -150,8 +233,16 @@ public class ProjectController : ControllerBase
     [HttpPost("{projectId:guid}/reminders")]
     public async Task<ActionResult<ReminderDto>> AddReminderToProject(Guid projectId, CreateReminderForProjectDto dto)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
         var project = await _unitOfWork.Projects.GetByIdAsync(projectId);
-        if (project == null) return NotFound("Project niet gevonden.");
+        if (project == null) 
+            return NotFound(new { message = "Project niet gevonden." });
+
+        if (project.OwnerId != currentUserId && !project.SharedWithUsers.Any(u => u.Id == currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Geen schrijfrechten op dit project." });
 
         var reminder = new Reminder
         {
@@ -180,8 +271,16 @@ public class ProjectController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteProject(Guid id)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
         var project = await _unitOfWork.Projects.GetByIdAsync(id);
-        if (project == null) return NotFound("Project niet gevonden.");
+        if (project == null) 
+            return NotFound(new { message = "Project niet gevonden." });
+
+        if (project.OwnerId != currentUserId)
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Alleen de eigenaar kan dit project verwijderen." });
 
         _unitOfWork.Projects.Delete(project);
         await _unitOfWork.CompleteAsync();
@@ -189,3 +288,5 @@ public class ProjectController : ControllerBase
         return NoContent();
     }
 }
+
+public record ShareProjectRequest(string Email);

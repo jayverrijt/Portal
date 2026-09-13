@@ -9,104 +9,121 @@
 
 <PageTitle>Notities - Portal</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold m-0 text-nord-snow">Notities & Documentatie</h2>
-        <p class="text-nord-dim m-0">Beheer losse aantekeningen, code snippets en gekoppelde projectnotities</p>
-    </div>
-    <button type="button" class="btn btn-primary" @onclick="OpenCreateModal">
-        <i class="fa-solid fa-plus me-1"></i> Nieuwe Notitie
-    </button>
-</div>
-
-@if (!string.IsNullOrEmpty(_errorMessage))
-{
-    <div class="alert alert-danger" role="alert">@_errorMessage</div>
-}
-
-@if (_isLoading)
-{
-    <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 text-nord-dim">Notities laden...</p>
-    </div>
-}
-else if (!_notes.Any())
-{
-    <div class="card card-body text-center py-5 bg-nord-dark border-nord">
-        <h5 class="text-nord-snow">Nog geen notities aanwezig</h5>
-        <p class="text-nord-dim small">Maak een standalone notitie aan voor ideeën, snippets of aantekeningen.</p>
+<div class="portal-content-scroll p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="OpenCreateModal">
-                <i class="fa-solid fa-plus me-1"></i> Eerste Notitie Maken
-            </button>
+            <h2 class="fw-bold m-0 text-nord-snow">Notities & Documentatie</h2>
+            <p class="text-nord-dim m-0">Beheer persoonlijke aantekeningen en gekoppelde projectnotities</p>
         </div>
+        <button type="button" class="btn btn-primary" @onclick="OpenCreateModal">
+            <i class="fa-solid fa-plus me-1"></i> Nieuwe Notitie
+        </button>
     </div>
-}
-else
-{
-    <div class="row g-4">
-        @foreach (var note in _notes.OrderByDescending(n => n.CreatedAt))
-        {
-            <div class="col-lg-4 col-md-6">
-                <div class="card h-100 shadow-sm border-nord bg-nord-dark d-flex flex-column">
-                    <div class="card-header bg-nord-card border-nord d-flex justify-content-between align-items-center py-2 px-3">
-                        <h6 class="fw-bold m-0 text-nord-ice text-truncate" title="@note.Title">@note.Title</h6>
-                        <div class="d-flex align-items-center gap-1">
-                            <button type="button" class="btn btn-sm p-1 text-nord-dim" title="Bewerken" @onclick="() => EditNote(note)">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm p-1 text-danger" title="Verwijderen" @onclick="() => DeleteNote(note.Id)">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger py-2 px-3 small mb-4 border-0 text-nord-snow d-flex justify-content-between align-items-center rounded-3 shadow-sm" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fa-solid fa-triangle-exclamation me-2 fs-6 text-nord-yellow"></i>
+                <span>@_errorMessage</span>
+            </div>
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+        </div>
+    }
+
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-nord-ice" role="status"></div>
+            <p class="mt-2 text-nord-dim">Notities ophalen...</p>
+        </div>
+    }
+    else if (!_notes.Any())
+    {
+        <div class="card card-body text-center py-5 bg-nord-dark border-nord shadow-sm">
+            <div class="d-inline-flex align-items-center justify-content-center bg-nord-surface rounded-circle mx-auto mb-3" style="width: 54px; height: 54px;">
+                <i class="fa-solid fa-note-sticky text-nord-ice fs-4"></i>
+            </div>
+            <h5 class="text-nord-snow fw-bold">Geen notities gevonden</h5>
+            <p class="text-nord-dim small mb-3">Je hebt nog geen persoonlijke notities aangemaakt of gedeeld gekregen.</p>
+            <div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="OpenCreateModal">
+                    <i class="fa-solid fa-plus me-1"></i> Eerste Notitie Aanmaken
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var note in _notes.OrderByDescending(n => n.CreatedAt))
+            {
+                <div class="col-xl-4 col-md-6">
+                    <div class="card h-100 shadow-sm border-nord bg-nord-dark d-flex flex-column">
+                        <div class="card-header bg-nord-card border-nord d-flex justify-content-between align-items-center py-2 px-3">
+                            <h6 class="fw-bold m-0 text-nord-ice text-truncate" title="@note.Title">@note.Title</h6>
+                            <div class="d-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm p-1 text-nord-dim hover-ice" title="Bewerken" @onclick="() => EditNote(note)">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm p-1 text-nord-red" title="Verwijderen" @onclick="() => DeleteNote(note.Id)">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3 flex-grow-1 overflow-y-auto" style="max-height: 250px;">
+                            <MarkdownView Content="@note.Content" />
+                        </div>
+                        <div class="card-footer bg-nord-card border-nord py-2 px-3 d-flex justify-content-between align-items-center">
+                            <small class="text-nord-dim" style="font-size: 0.75rem;">
+                                @note.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                            </small>
+                            @if (note.ProjectId.HasValue)
+                            {
+                                <span class="badge border border-nord bg-nord-surface text-nord-ice" style="font-size: 0.7rem;">
+                                    <i class="fa-solid fa-folder me-1"></i> Gekoppeld Project
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge border border-nord bg-nord-surface text-nord-dim" style="font-size: 0.7rem;">
+                                    Persoonlijk
+                                </span>
+                            }
                         </div>
                     </div>
-                    <div class="card-body p-3 flex-grow-1 overflow-y-auto" style="max-height: 250px;">
-                        <MarkdownView Content="@note.Content" />
-                    </div>
-                    <div class="card-footer bg-nord-card border-nord py-2 px-3 d-flex justify-content-between align-items-center">
-                        <small class="text-nord-dim" style="font-size: 0.75rem;">
-                            @note.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
-                        </small>
-                        @if (note.ProjectId.HasValue)
-                        {
-                            <span class="badge border border-nord bg-nord-surface text-nord-ice" style="font-size: 0.7rem;">
-                                <i class="fa-solid fa-folder me-1"></i> Gekoppeld Project
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="badge border border-nord bg-nord-surface text-nord-dim" style="font-size: 0.7rem;">
-                                Standalone
-                            </span>
-                        }
-                    </div>
                 </div>
-            </div>
-        }
-    </div>
-}
+            }
+        </div>
+    }
+</div>
 
-<!-- NOTITIE AANMAKEN / BEWERKEN MODAL -->
 @if (_showModal)
 {
-    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1050;">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.65); backdrop-filter: blur(2px); z-index: 1050;">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-nord shadow-lg">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold">@(_editingNoteId.HasValue ? "Notitie Bewerken" : "Nieuwe Notitie Aanmaken")</h5>
+                    <h5 class="modal-title fw-bold text-nord-snow">@(_editingNoteId.HasValue ? "Notitie Bewerken" : "Nieuwe Notitie")</h5>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
                 <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_modalErrorMessage))
+                    {
+                        <div class="alert alert-danger py-2 small mb-3 border-0 text-nord-snow" role="alert">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> @_modalErrorMessage
+                        </div>
+                    }
+
                     <div class="mb-3">
-                        <label class="form-label">Titel</label>
-                        <input type="text" class="form-control" placeholder="bijv. Docker CheatSheet of Sprint Reflectie" @bind="_modalTitle" />
+                        <label class="form-label text-nord-snow small fw-semibold">Titel</label>
+                        <input type="text" class="form-control" placeholder="bijv. Docker CheatSheet of Architectuur Keuzes" @bind="_modalTitle" />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Koppelen aan Project (Optioneel)</label>
+                        <label class="form-label text-nord-snow small fw-semibold">Koppelen aan Project (Optioneel)</label>
                         <select class="form-select" @bind="_modalProjectId">
-                            <option value="">-- Geen project (Standalone Notitie) --</option>
+                            <option value="">-- Geen project (Persoonlijke Notitie) --</option>
                             @foreach (var proj in _projects)
                             {
                                 <option value="@proj.Id">@proj.Title</option>
@@ -115,13 +132,23 @@ else
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Inhoud (Markdown)</label>
+                        <label class="form-label text-nord-snow small fw-semibold">Inhoud (Markdown)</label>
                         <RichNoteEditor @bind-Value="_modalContent" />
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-nord">
                     <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuleren</button>
-                    <button type="button" class="btn btn-primary" @onclick="SaveNote">Opslaan</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveNote" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <span>Opslaan...</span>
+                        }
+                        else
+                        {
+                            <span>Opslaan</span>
+                        }
+                    </button>
                 </div>
             </div>
         </div>
@@ -132,7 +159,9 @@ else
     private List<NoteDto> _notes = new();
     private List<ProjectDto> _projects = new();
     private bool _isLoading = true;
+    private bool _isSaving;
     private string? _errorMessage;
+    private string? _modalErrorMessage;
 
     private bool _showModal;
     private Guid? _editingNoteId;
@@ -152,12 +181,17 @@ else
 
         try
         {
-            _notes = await Http.GetFromJsonAsync<List<NoteDto>>("api/notes") ?? new();
-            _projects = await Http.GetFromJsonAsync<List<ProjectDto>>("api/project") ?? new();
+            var notesTask = Http.GetFromJsonAsync<List<NoteDto>>("api/notes");
+            var projectsTask = Http.GetFromJsonAsync<List<ProjectDto>>("api/project");
+
+            await Task.WhenAll(notesTask, projectsTask);
+
+            _notes = await notesTask ?? new();
+            _projects = await projectsTask ?? new();
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Fout bij laden van data: {ex.Message}";
+            _errorMessage = $"Fout bij laden van gegevens: {ex.Message}";
         }
         finally
         {
@@ -171,6 +205,7 @@ else
         _modalTitle = string.Empty;
         _modalContent = string.Empty;
         _modalProjectId = string.Empty;
+        _modalErrorMessage = null;
         _showModal = true;
     }
 
@@ -180,23 +215,32 @@ else
         _modalTitle = note.Title;
         _modalContent = note.Content;
         _modalProjectId = note.ProjectId?.ToString() ?? string.Empty;
+        _modalErrorMessage = null;
         _showModal = true;
     }
 
-    private void CloseModal() => _showModal = false;
+    private void CloseModal()
+    {
+        _showModal = false;
+        _modalErrorMessage = null;
+    }
 
     private async Task SaveNote()
     {
         if (string.IsNullOrWhiteSpace(_modalTitle))
         {
-            _errorMessage = "Vul een titel in.";
+            _modalErrorMessage = "Titel is verplicht.";
             return;
         }
+
+        _isSaving = true;
+        _modalErrorMessage = null;
 
         Guid? projId = Guid.TryParse(_modalProjectId, out var parsedGuid) ? parsedGuid : null;
 
         try
         {
+            HttpResponseMessage response;
             if (_editingNoteId.HasValue)
             {
                 var updateDto = new UpdateNoteDto
@@ -205,12 +249,7 @@ else
                     Content = _modalContent,
                     ProjectId = projId
                 };
-                var response = await Http.PutAsJsonAsync($"api/notes/{_editingNoteId.Value}", updateDto);
-                if (response.IsSuccessStatusCode)
-                {
-                    CloseModal();
-                    await LoadData();
-                }
+                response = await Http.PutAsJsonAsync($"api/notes/{_editingNoteId.Value}", updateDto);
             }
             else
             {
@@ -220,17 +259,27 @@ else
                     Content = _modalContent,
                     ProjectId = projId
                 };
-                var response = await Http.PostAsJsonAsync("api/notes", createDto);
-                if (response.IsSuccessStatusCode)
-                {
-                    CloseModal();
-                    await LoadData();
-                }
+                response = await Http.PostAsJsonAsync("api/notes", createDto);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModal();
+                await LoadData();
+            }
+            else
+            {
+                var errorObj = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+                _modalErrorMessage = errorObj?.Message ?? $"Fout ({response.StatusCode}): Actie kon niet worden voltooid.";
             }
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Fout bij opslaan notitie: {ex.Message}";
+            _modalErrorMessage = $"Verbindingsfout: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
         }
     }
 
@@ -243,10 +292,20 @@ else
             {
                 _notes.RemoveAll(n => n.Id == noteId);
             }
+            else
+            {
+                var errorObj = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+                _errorMessage = errorObj?.Message ?? "Kon notitie niet verwijderen. Mogelijk ontbreken de benodigde rechten.";
+            }
         }
         catch (Exception ex)
         {
             _errorMessage = $"Fout bij verwijderen: {ex.Message}";
         }
+    }
+
+    private class ApiErrorResponse
+    {
+        public string? Message { get; set; }
     }
 }
