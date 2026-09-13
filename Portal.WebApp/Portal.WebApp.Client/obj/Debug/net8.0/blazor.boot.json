@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "Portal.WebApp.Client",
   "resources": {
-    "hash": "sha256-s+LqelkeUo6274aGxsrp0S6C/fNpZAA+Cpn8mcr89nI=",
+    "hash": "sha256-hgizNig6jbU+zaGrIzWl3+WSe22lT1vvw8PWfHekwUA=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-dexsp+9ih2C28zVhNnPXUbkz2QCq7lHpkyDcmaLl7NQ="
     },
@@ -215,12 +215,12 @@
       "mscorlib.wasm": "sha256-pP80UGziulDYhvVdeUaGEq9FlrHQDQmnCqVvx1FJZis=",
       "netstandard.wasm": "sha256-ARMsMyhWuSDjvzisfZbnEptnxh8Vh7VpHPhuT6iazy0=",
       "System.Private.CoreLib.wasm": "sha256-+28m4yuZsdz9ij1sJHvNH896fSI8gXgrQ9bhGO76Qqo=",
-      "Portal.wasm": "sha256-Z/Hz7DnEhUm8HgulfOxKsglTgBOuzNsftY1HXLvNHVE=",
-      "Portal.WebApp.Client.wasm": "sha256-kxi/ZJ2pt7Mp8ZgNkyAs57dhFtJzYNFUPMFhu3UW8oI="
+      "Portal.wasm": "sha256-acZI264W7GE92CvxSdFci1VyVkILaFKtoi4Xfd3gplU=",
+      "Portal.WebApp.Client.wasm": "sha256-d0FxoUOSdty4Wm5Sguea4ug4CzMIQFHDKq/NrapzzDM="
     },
     "pdb": {
-      "Portal.pdb": "sha256-jffiRHhyRhcp6qzPZhjly9bB3DxoBhy3HfMurY2CyyA=",
-      "Portal.WebApp.Client.pdb": "sha256-l3VVheqWbAUthEIV60ueM3b/sGz453kHDvYLJdAIu0E="
+      "Portal.pdb": "sha256-JUMt1Kuk5suhGC1xm3oHr7LpxxV4Y1oVTk1CvCE788I=",
+      "Portal.WebApp.Client.pdb": "sha256-/6/R37TWTIannRoYUowlJ4hMW4J0C3TwR4KfwCjVAf4="
     }
   },
   "cacheBootResources": true,

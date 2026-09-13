@@ -5,18 +5,18 @@
 
 @if (IsOpen)
 {
-    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1050;">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-nord shadow-lg">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.7); backdrop-filter: blur(2px); z-index: 1055;">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-height: 90vh;">
+            <div class="modal-content border-nord shadow-lg" style="max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-header flex-shrink-0">
+                    <h5 class="modal-title fw-bold text-nord-snow">
                         <i class="fa-solid fa-book-open me-2 text-nord-ice"></i>Notities: @(Project?.Title ?? "Project")
                     </h5>
                     <button type="button" class="btn-close" @onclick="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body overflow-y-auto p-4" style="flex: 1 1 auto; min-height: 0;">
                     <!-- NIEUWE NOTITIE FORMULIER MET RICH EDITOR -->
-                    <div class="p-3 bg-nord-dark rounded border border-nord mb-4">
+                    <div class="p-3 bg-nord-dark rounded border border-nord mb-4 shadow-sm">
                         <h6 class="fw-bold text-nord-snow mb-3">Nieuwe Aantekening Toevoegen</h6>
                         <div class="mb-2">
                             <input type="text" class="form-control" placeholder="Titel van de notitie..." @bind="_newNoteTitle" />
@@ -25,42 +25,58 @@
                             <RichNoteEditor @bind-Value="_newNoteContent" />
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="button" class="btn btn-primary btn-sm" @onclick="CreateNote">
-                                <i class="fa-solid fa-plus me-1"></i> Notitie Opslaan
+                            <button type="button" class="btn btn-primary btn-sm" @onclick="CreateNote" disabled="@_isSubmitting">
+                                @if (_isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                    <span>Opslaan...</span>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-plus me-1"></i>
+                                    <span>Notitie Opslaan</span>
+                                }
                             </button>
                         </div>
                     </div>
 
                     <!-- BESTAANDE NOTITIES LIJST MET MARKDOWN RENDERING -->
-                    <h6 class="fw-bold text-nord-dim text-uppercase small mb-2">Bestaande Aantekeningen (@Notes.Count)</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-nord-dim text-uppercase small m-0">Bestaande Aantekeningen (@Notes.Count)</h6>
+                    </div>
+
                     @if (!Notes.Any())
                     {
-                        <p class="text-nord-dim small fst-italic">Nog geen documentatie aanwezig voor dit project.</p>
+                        <div class="p-4 text-center border border-nord rounded bg-nord-dark">
+                            <p class="text-nord-dim small fst-italic mb-0">Nog geen documentatie aanwezig voor dit project.</p>
+                        </div>
                     }
                     else
                     {
-                        <div class="d-flex flex-column gap-3 overflow-y-auto" style="max-height: 350px;">
+                        <div class="d-flex flex-column gap-3">
                             @foreach (var note in Notes.OrderByDescending(n => n.CreatedAt))
                             {
-                                <div class="p-3 bg-nord-dark rounded border border-nord">
-                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-nord">
-                                        <strong class="text-nord-ice">@note.Title</strong>
-                                        <div class="d-flex align-items-center gap-2">
+                                <div class="bg-nord-dark rounded border border-nord shadow-sm d-flex flex-column" style="max-height: 280px;">
+                                    <div class="d-flex justify-content-between align-items-center py-2 px-3 border-bottom border-nord flex-shrink-0 bg-nord-card rounded-top">
+                                        <strong class="text-nord-ice text-truncate pe-2" title="@note.Title">@note.Title</strong>
+                                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
                                             <span class="text-nord-dim small" style="font-size: 0.75rem;">
                                                 @note.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
                                             </span>
-                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Verwijderen" @onclick="() => DeleteNote(note.Id)">
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="Verwijderen" @onclick="() => DeleteNote(note.Id)">
                                                 <i class="fa-solid fa-xmark"></i>
                                             </button>
                                         </div>
                                     </div>
-                                    <MarkdownView Content="@note.Content" />
+                                    <div class="p-3 overflow-y-auto text-nord-snow" style="min-height: 0; font-size: 0.88rem; line-height: 1.5;">
+                                        <MarkdownView Content="@note.Content" />
+                                    </div>
                                 </div>
                             }
                         </div>
                     }
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer flex-shrink-0 border-nord">
                     <button type="button" class="btn btn-secondary" @onclick="Close">Sluiten</button>
                 </div>
             </div>
@@ -77,6 +93,7 @@
 
     private string _newNoteTitle = string.Empty;
     private string _newNoteContent = string.Empty;
+    private bool _isSubmitting;
 
     private async Task Close() => await OnClosed.InvokeAsync();
 
@@ -84,19 +101,27 @@
     {
         if (Project == null || string.IsNullOrWhiteSpace(_newNoteTitle)) return;
 
-        var dto = new CreateNoteDto
+        _isSubmitting = true;
+        try
         {
-            Title = _newNoteTitle,
-            Content = _newNoteContent,
-            ProjectId = Project.Id
-        };
+            var dto = new CreateNoteDto
+            {
+                Title = _newNoteTitle.Trim(),
+                Content = _newNoteContent,
+                ProjectId = Project.Id
+            };
 
-        var response = await Http.PostAsJsonAsync("api/notes", dto);
-        if (response.IsSuccessStatusCode)
+            var response = await Http.PostAsJsonAsync("api/notes", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                _newNoteTitle = string.Empty;
+                _newNoteContent = string.Empty;
+                await OnNotesUpdated.InvokeAsync();
+            }
+        }
+        finally
         {
-            _newNoteTitle = string.Empty;
-            _newNoteContent = string.Empty;
-            await OnNotesUpdated.InvokeAsync();
+            _isSubmitting = false;
         }
     }
 
