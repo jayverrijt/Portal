@@ -1,0 +1,47 @@
+Running `(cd /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/; TMPDIR=/var/folders/c5/w70h2z1n5s9_zg4mscp_n_7h0000gn/T/ PATH=/Users/jayv/.local/flutter/bin:/Users/jayv/.dotnet/tools:/Users/jayv/.pyenv/shims:/Users/jayv/.composer/vendor/bin:/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/usr/local/share/dotnet:~/.dotnet/tools:/opt/homebrew/bin:/Users/jayv/.docker/bin HOME=/Users/jayv /Users/jayv/.local/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/jayv/Projects/Portal/portal_mobile/.dart_tool/package_config.json /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/objective_c/de310349bc/hook.dill --config=/Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/objective_c/de310349bc/input.json )`.
+INFO: 2026-09-14 15:30:54.337058: Using compiler /Library/Developer/CommandLineTools/usr/bin/clang from BuildInput.cCompiler.cc.
+
+INFO: 2026-09-14 15:30:54.340237: Running: /Library/Developer/CommandLineTools/usr/bin/clang -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/src/include/dart_api_dl.c -fpic -gline-tables-only -I src -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-09-14 15:30:54.340983: Running: /Library/Developer/CommandLineTools/usr/bin/clang -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/src/objective_c.c -fpic -gline-tables-only -I src -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c.c.o
+
+INFO: 2026-09-14 15:30:54.341095: Running: /Library/Developer/CommandLineTools/usr/bin/clang -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/src/input_stream_adapter.m -fpic -gline-tables-only -I src -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-09-14 15:30:54.341180: Running: /Library/Developer/CommandLineTools/usr/bin/clang -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/src/objective_c.m -fpic -gline-tables-only -I src -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c.m.o
+
+INFO: 2026-09-14 15:30:54.341261: Running: /Library/Developer/CommandLineTools/usr/bin/clang -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/src/observer.m -fpic -gline-tables-only -I src -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/observer.m.o
+
+INFO: 2026-09-14 15:30:54.341340: Running: /Library/Developer/CommandLineTools/usr/bin/clang -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/src/ns_number.m -fpic -gline-tables-only -I src -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/ns_number.m.o
+
+INFO: 2026-09-14 15:30:54.341415: Running: /Library/Developer/CommandLineTools/usr/bin/clang -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/src/protocol.m -fpic -gline-tables-only -I src -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/protocol.m.o
+
+INFO: 2026-09-14 15:30:54.341494: Running: /Library/Developer/CommandLineTools/usr/bin/clang -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/jayv/.pub-cache/hosted/pub.dev/objective_c-9.6.0/src/objective_c_bindings_generated.m -fpic -gline-tables-only -I src -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-09-14 15:30:54.463371: 
+INFO: 2026-09-14 15:30:54.463380: 
+INFO: 2026-09-14 15:30:54.463388: Generated /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c.c.o
+
+dl.c.o
+
+INFO: 2026-09-14 15:30:54.464066: Generated /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/protocol.m.o
+
+INFO: 2026-09-14 15:30:54.643551: 
+INFO: 2026-09-14 15:30:54.643586: 
+INFO: 2026-09-14 15:30:54.643596: Generated /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/ns_number.m.o
+
+INFO: 2026-09-14 15:30:54.654152: 
+INFO: 2026-09-14 15:30:54.654162: 
+INFO: 2026-09-14 15:30:54.654170: Generated /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c.m.o
+
+ter.m.o
+
+INFO: 2026-09-14 15:30:54.680134: 
+INFO: 2026-09-14 15:30:54.680165: 
+INFO: 2026-09-14 15:30:54.680174: Generated /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-09-14 15:30:54.680426: Running: /Library/Developer/CommandLineTools/usr/bin/clang -shared -Wl,-encryptable -undefined dynamic_lookup -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -target arm64-apple-darwin -mmacos-version-min=13 /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/include/dart_api_dl.c.o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c.c.o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/input_stream_adapter.m.o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c.m.o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/observer.m.o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/ns_number.m.o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/protocol.m.o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/obj/src/objective_c_bindings_generated.m.o -o /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/objective_c.dylib
+
+INFO: 2026-09-14 15:30:54.796189: 
+INFO: 2026-09-14 15:30:54.796236: 
+INFO: 2026-09-14 15:30:54.796245: Generated /Users/jayv/Projects/Portal/portal_mobile/.dart_tool/hooks_runner/shared/objective_c/build/de310349bc/objective_c.dylib
+
