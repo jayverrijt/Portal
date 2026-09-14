@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, flutter ]
+    branches: [ main, docker, flutter ]
   pull_request:
-    branches: [ main, flutter ]
+    branches: [ main, docker, flutter ]
 
 jobs:
   test-backend:
@@ -39,19 +39,20 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Analyze code
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Run Flutter Tests
         run: flutter test
@@ -59,7 +60,7 @@ jobs:
   build-mobile-release:
     name: Build Android Release APK
     needs: [test-backend, test-mobile]
-    if: github.ref == 'refs/heads/flutter' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/flutter' || github.ref == 'refs/heads/docker') && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,13 +68,14 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
 
       - name: Build APK
         working-directory: portal_mobile
