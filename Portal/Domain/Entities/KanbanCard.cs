@@ -19,5 +19,5 @@ public class KanbanCard : BaseEntity
     public ICollection<BoardLabel> Labels { get; set; } = new List<BoardLabel>();
 
     public DateTime? DueDate { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+    public new DateTime? UpdatedAt { get; set; }
 }
