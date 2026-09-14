@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/nord_theme.dart';
-import '../models/project_models.dart';
 import '../providers/project_provider.dart';
 
 class NoteEditorScreen extends ConsumerStatefulWidget {
   final String projectId;
-  final NoteDto? initialNote;
+  final dynamic initialNote;
 
   const NoteEditorScreen({
     super.key,
@@ -19,129 +17,122 @@ class NoteEditorScreen extends ConsumerStatefulWidget {
   ConsumerState<NoteEditorScreen> createState() => _NoteEditorScreenState();
 }
 
-class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen>
-    with SingleTickerProviderStateMixin {
+class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _contentController;
-  late final TabController _tabController;
-  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.initialNote?.title ?? '');
     _contentController = TextEditingController(text: widget.initialNote?.content ?? '');
-    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> _saveNote() async {
     final title = _titleController.text.trim();
-    if (title.isEmpty) return;
+    final content = _contentController.text.trim();
 
-    setState(() => _isSaving = true);
-    final success = await ref.read(projectActionsProvider.notifier).saveNote(
-      noteId: widget.initialNote?.id,
-      projectId: widget.projectId,
-      title: title,
-      content: _contentController.text,
-    );
-    setState(() => _isSaving = false);
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Titel is verplicht')),
+      );
+      return;
+    }
 
-    if (mounted && success) Navigator.of(context).pop();
+    try {
+      final notifier = ref.read(projectActionsProvider.notifier);
+
+      final success = await notifier.saveNote(
+        noteId: widget.initialNote?.id,
+        projectId: widget.projectId,
+        title: title,
+        content: content,
+      );
+
+      if (success && mounted) {
+        // Forceer direct verversing van zowel de notities als de projectenlijst
+        ref.invalidate(projectNotesProvider(widget.projectId));
+        ref.invalidate(projectsProvider);
+
+        // Kleine pauze zodat de provider de nieuwe data ophaalt voordat we terugkeren
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Opslaan mislukt op de server'), backgroundColor: NordColors.nord11),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij opslaan: $e'), backgroundColor: NordColors.nord11),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: NordColors.nord0,
       appBar: AppBar(
-        title: Text(widget.initialNote == null ? 'Nieuwe Notitie' : 'Bewerk Notitie'),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: NordColors.nord8,
-          labelColor: NordColors.nord8,
-          unselectedLabelColor: NordColors.nord4,
-          tabs: const [Tab(text: 'Bewerken'), Tab(text: 'Preview')],
+        backgroundColor: NordColors.nord1,
+        title: Text(
+          widget.initialNote == null ? 'Nieuwe Notitie' : 'Notitie Bewerken',
+          style: const TextStyle(color: NordColors.nord6),
         ),
+        iconTheme: const IconThemeData(color: NordColors.nord6),
         actions: [
           IconButton(
-            icon: _isSaving
-                ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: NordColors.nord8,
-              ),
-            )
-                : const Icon(Icons.check, color: NordColors.nord14),
-            onPressed: _isSaving ? null : _save,
+            icon: const Icon(Icons.save, color: NordColors.nord8),
+            onPressed: _saveNote,
           ),
         ],
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  style: const TextStyle(
-                    color: NordColors.nord6,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: 'Titel van notitie...',
-                    hintStyle: TextStyle(color: NordColors.nord3),
-                    border: InputBorder.none,
-                  ),
-                ),
-                const Divider(color: NordColors.nord2),
-                Expanded(
-                  child: TextField(
-                    controller: _contentController,
-                    maxLines: null,
-                    expands: true,
-                    style: const TextStyle(color: NordColors.nord5, fontSize: 14),
-                    decoration: const InputDecoration(
-                      hintText: 'Schrijf markdown content hier...',
-                      hintStyle: TextStyle(color: NordColors.nord3),
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _titleController,
+              style: const TextStyle(color: NordColors.nord6, fontSize: 18, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: 'Notitietitel...',
+                hintStyle: const TextStyle(color: NordColors.nord3),
+                filled: true,
+                fillColor: NordColors.nord1,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SingleChildScrollView(
-              child: MarkdownBody(
-                data: _contentController.text.isEmpty
-                    ? '*Geen inhoud*'
-                    : _contentController.text,
-                styleSheet: MarkdownStyleSheet(
-                  p: const TextStyle(color: NordColors.nord5, fontSize: 14),
-                  h1: const TextStyle(color: NordColors.nord8, fontWeight: FontWeight.bold),
-                  code: const TextStyle(
-                    color: NordColors.nord7,
-                    backgroundColor: NordColors.nord1,
-                  ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: TextField(
+                controller: _contentController,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                style: const TextStyle(color: NordColors.nord5),
+                decoration: InputDecoration(
+                  hintText: 'Schrijf je markdown content hier...',
+                  hintStyle: const TextStyle(color: NordColors.nord3),
+                  filled: true,
+                  fillColor: NordColors.nord1,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

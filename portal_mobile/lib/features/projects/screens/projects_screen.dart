@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/nord_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/project_provider.dart';
 import 'flowboard_screen.dart';
 import 'note_editor_screen.dart';
-import 'package:go_router/go_router.dart';
 
 class ProjectsScreen extends ConsumerWidget {
   const ProjectsScreen({super.key});
@@ -179,7 +179,7 @@ class ProjectsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Productivity Suite',
+                      'Project & Finance Suite',
                       style: TextStyle(color: NordColors.nord4, fontSize: 12),
                     ),
                   ],
@@ -191,7 +191,7 @@ class ProjectsScreen extends ConsumerWidget {
               title: const Text('Home', style: TextStyle(color: NordColors.nord4)),
               onTap: () {
                 Navigator.of(context).pop();
-                context.go('/home');
+                Future.microtask(() => context.go('/home'));
               },
             ),
             ListTile(
@@ -208,7 +208,7 @@ class ProjectsScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               onTap: () {
                 Navigator.of(context).pop();
-                context.go('/budget');
+                Future.microtask(() => context.go('/budget'));
               },
             ),
             ListTile(
@@ -217,7 +217,7 @@ class ProjectsScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               onTap: () {
                 Navigator.of(context).pop();
-                context.go('/tools');
+                Future.microtask(() => context.go('/tools'));
               },
             ),
             const Spacer(),
@@ -271,7 +271,6 @@ class ProjectsScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Dashboard Header Card
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -289,8 +288,6 @@ class ProjectsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Project Cards List
               ...projects.map((project) => Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
@@ -334,7 +331,6 @@ class ProjectsScreen extends ConsumerWidget {
                     ),
                   ),
                   children: [
-                    // Grotere, prominentere actieknoppen
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Column(
@@ -376,7 +372,7 @@ class ProjectsScreen extends ConsumerWidget {
                                   onPressed: () {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
-                                        builder: (_) => ProjectNotesScreen(project: project),
+                                        builder: (_) => ProjectNotesScreen(projectId: project.id, projectTitle: project.title),
                                       ),
                                     );
                                   },
@@ -407,79 +403,6 @@ class ProjectsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Divider(color: NordColors.nord2, height: 24),
-
-                    // Compacte Preview van max 2 notities
-                    if (project.notes.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 0, 16, 20),
-                        child: Text(
-                          'Geen documentatie voor dit project.',
-                          style: TextStyle(
-                            color: NordColors.nord3,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 13,
-                          ),
-                        ),
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Recente Notities (Preview)',
-                              style: TextStyle(color: NordColors.nord4, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            ...project.notes.take(2).map((note) => Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: NordColors.nord0,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: NordColors.nord2),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.note, size: 16, color: NordColors.nord8),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      note.title,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: NordColors.nord6,
-                                        fontSize: 13,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const Icon(Icons.chevron_right, size: 16, color: NordColors.nord3),
-                                ],
-                              ),
-                            )),
-                            if (project.notes.length > 2)
-                              Center(
-                                child: TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => ProjectNotesScreen(project: project),
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    'Bekijk alle ${project.notes.length} notities...',
-                                    style: const TextStyle(color: NordColors.nord8, fontSize: 12),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
                   ],
                 ),
               )),
@@ -514,19 +437,62 @@ class ProjectsScreen extends ConsumerWidget {
   }
 }
 
-// Dedicated Notes Overzichtsscherm per Project
-class ProjectNotesScreen extends StatelessWidget {
-  final dynamic project;
+// Dedicated Notes Overzichtsscherm inclusief Delete functionaliteit
+class ProjectNotesScreen extends ConsumerWidget {
+  final String projectId;
+  final String projectTitle;
 
-  const ProjectNotesScreen({super.key, required this.project});
+  const ProjectNotesScreen({
+    super.key,
+    required this.projectId,
+    required this.projectTitle,
+  });
+
+  void _confirmDeleteNote(BuildContext context, WidgetRef ref, String noteId, String noteTitle) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NordColors.nord1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Notitie verwijderen', style: TextStyle(color: NordColors.nord6)),
+        content: Text(
+          'Weet je zeker dat je "$noteTitle" wilt verwijderen?',
+          style: const TextStyle(color: NordColors.nord4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Annuleren', style: TextStyle(color: NordColors.nord4)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: NordColors.nord11,
+              foregroundColor: NordColors.nord6,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(projectActionsProvider.notifier).deleteNote(projectId, noteId);
+              // Forceer direct verversing
+              ref.invalidate(projectNotesProvider(projectId));
+              ref.invalidate(projectsProvider);
+            },
+            child: const Text('Verwijderen'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notesAsync = ref.watch(projectNotesProvider(projectId));
+
     return Scaffold(
       backgroundColor: NordColors.nord0,
       appBar: AppBar(
         backgroundColor: NordColors.nord1,
-        title: Text('Notities: ${project.title}', style: const TextStyle(color: NordColors.nord6, fontSize: 18)),
+        title: Text('Notities: $projectTitle', style: const TextStyle(color: NordColors.nord6, fontSize: 18)),
         iconTheme: const IconThemeData(color: NordColors.nord6),
         actions: [
           IconButton(
@@ -535,97 +501,113 @@ class ProjectNotesScreen extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => NoteEditorScreen(projectId: project.id),
+                  builder: (_) => NoteEditorScreen(projectId: projectId),
                 ),
               );
             },
           ),
         ],
       ),
-      body: project.notes.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.note_alt_outlined, size: 64, color: NordColors.nord3),
-            const SizedBox(height: 16),
-            const Text(
-              'Geen notities voor dit project.',
-              style: TextStyle(color: NordColors.nord4, fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: NordColors.nord8,
-                foregroundColor: NordColors.nord0,
-              ),
-              icon: const Icon(Icons.add),
-              label: const Text('Eerste notitie maken'),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => NoteEditorScreen(projectId: project.id),
+      body: notesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: NordColors.nord8)),
+        error: (err, _) => Center(child: Text('Fout bij laden notities: $err', style: const TextStyle(color: NordColors.nord11))),
+        data: (notes) {
+          if (notes.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.note_alt_outlined, size: 64, color: NordColors.nord3),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Geen notities voor dit project.',
+                    style: TextStyle(color: NordColors.nord4, fontSize: 16),
                   ),
-                );
-              },
-            ),
-          ],
-        ),
-      )
-          : ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: project.notes.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final note = project.notes[index];
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: NordColors.nord1,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: NordColors.nord2),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        note.title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: NordColors.nord8,
-                          fontSize: 16,
-                        ),
-                      ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: NordColors.nord8,
+                      foregroundColor: NordColors.nord0,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, color: NordColors.nord4, size: 20),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => NoteEditorScreen(
-                              projectId: project.id,
-                              initialNote: note,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Eerste notitie maken'),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NoteEditorScreen(projectId: projectId),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: notes.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final note = notes[index];
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: NordColors.nord1,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: NordColors.nord2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            note.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: NordColors.nord8,
+                              fontSize: 16,
                             ),
                           ),
-                        );
-                      },
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, color: NordColors.nord4, size: 20),
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => NoteEditorScreen(
+                                      projectId: projectId,
+                                      initialNote: note,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: NordColors.nord11, size: 20),
+                              onPressed: () => _confirmDeleteNote(context, ref, note.id, note.title),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Divider(color: NordColors.nord2, height: 16),
+                    MarkdownBody(
+                      data: note.content,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(color: NordColors.nord5, fontSize: 13),
+                        code: const TextStyle(color: NordColors.nord7, backgroundColor: NordColors.nord0),
+                      ),
                     ),
                   ],
                 ),
-                const Divider(color: NordColors.nord2, height: 16),
-                MarkdownBody(
-                  data: note.content,
-                  styleSheet: MarkdownStyleSheet(
-                    p: const TextStyle(color: NordColors.nord5, fontSize: 13),
-                    code: const TextStyle(color: NordColors.nord7, backgroundColor: NordColors.nord0),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),

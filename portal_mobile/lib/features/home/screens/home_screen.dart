@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/nord_theme.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../budget/screens/budget_screen.dart';
-import '../../projects/screens/projects_screen.dart';
 import '../../projects/providers/project_provider.dart';
-import '../../tools/screens/tools_screen.dart';
 import '../../tools/screens/weight_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -90,9 +88,7 @@ class HomeScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProjectsScreen()),
-                );
+                context.go('/projects');
               },
             ),
             ListTile(
@@ -101,9 +97,7 @@ class HomeScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BudgetScreen()),
-                );
+                context.go('/budget');
               },
             ),
             ListTile(
@@ -112,9 +106,7 @@ class HomeScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ToolsScreen()),
-                );
+                context.go('/tools');
               },
             ),
             const Spacer(),
@@ -290,11 +282,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   icon: const Icon(Icons.folder_open),
                   label: const Text('Projecten Bekijken'),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ProjectsScreen()),
-                    );
-                  },
+                  onPressed: () => context.go('/projects'),
                 ),
               ),
             ],

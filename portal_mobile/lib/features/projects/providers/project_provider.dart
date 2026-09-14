@@ -275,7 +275,10 @@ class ProjectActionsNotifier extends Notifier<void> {
           : await _client.dio.put('/Notes/$noteId', data: data);
 
       if (res.statusCode == 200 || res.statusCode == 201 || res.statusCode == 204) {
+        // Direct geforceerd verversen en wachten tot de nieuwe data binnen is
         ref.invalidate(projectNotesProvider(projectId));
+        ref.invalidate(projectsProvider);
+        await ref.read(projectNotesProvider(projectId).future);
         return true;
       }
       return false;
@@ -290,6 +293,8 @@ class ProjectActionsNotifier extends Notifier<void> {
       final res = await _client.dio.delete('/Notes/$noteId');
       if (res.statusCode == 200 || res.statusCode == 204) {
         ref.invalidate(projectNotesProvider(projectId));
+        ref.invalidate(projectsProvider);
+        await ref.read(projectNotesProvider(projectId).future);
         return true;
       }
       return false;

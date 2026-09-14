@@ -29,7 +29,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
-      // ShellRoute of sub-routes om de hoofdstructuur overal te behouden
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
