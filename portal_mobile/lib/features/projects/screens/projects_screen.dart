@@ -5,9 +5,64 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/nord_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/project_provider.dart';
+import 'flowboard_screen.dart';
+import 'note_editor_screen.dart';
 
 class ProjectsScreen extends ConsumerWidget {
   const ProjectsScreen({super.key});
+
+  void _showNewProjectDialog(BuildContext context, WidgetRef ref) {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NordColors.nord1,
+        title: const Text('Nieuw Project', style: TextStyle(color: NordColors.nord6)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              style: const TextStyle(color: NordColors.nord6),
+              decoration: const InputDecoration(
+                labelText: 'Titel',
+                labelStyle: TextStyle(color: NordColors.nord4),
+              ),
+            ),
+            TextField(
+              controller: descController,
+              style: const TextStyle(color: NordColors.nord6),
+              decoration: const InputDecoration(
+                labelText: 'Beschrijving (optioneel)',
+                labelStyle: TextStyle(color: NordColors.nord4),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Annuleren', style: TextStyle(color: NordColors.nord4)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: NordColors.nord8),
+            onPressed: () async {
+              final title = titleController.text.trim();
+              if (title.isNotEmpty) {
+                await ref
+                    .read(projectActionsProvider.notifier)
+                    .createProject(title, descController.text.trim());
+                if (ctx.mounted) Navigator.of(ctx).pop();
+              }
+            },
+            child: const Text('Aanmaken', style: TextStyle(color: NordColors.nord0)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,15 +88,18 @@ class ProjectsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: NordColors.nord8,
+        foregroundColor: NordColors.nord0,
+        onPressed: () => _showNewProjectDialog(context, ref),
+        child: const Icon(Icons.add),
+      ),
       body: projectsAsync.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: NordColors.nord8),
         ),
         error: (err, _) => Center(
-          child: Text(
-            'Fout bij ophalen: $err',
-            style: const TextStyle(color: NordColors.nord11),
-          ),
+          child: Text('Fout: $err', style: const TextStyle(color: NordColors.nord11)),
         ),
         data: (projects) {
           if (projects.isEmpty) {
@@ -69,10 +127,66 @@ class ProjectsScreen extends ConsumerWidget {
                     ),
                   ),
                   subtitle: Text(
-                    '${project.notes.length} notities • ${DateFormat('dd MMM yyyy').format(project.createdAt)}',
+                    '${project.notes.length} notities • ${project.cards.length} taken • ${DateFormat('dd MMM yyyy').format(project.createdAt)}',
                     style: const TextStyle(color: NordColors.nord4, fontSize: 12),
                   ),
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Row(
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(
+                              Icons.view_kanban_outlined,
+                              size: 16,
+                              color: NordColors.nord8,
+                            ),
+                            label: const Text(
+                              'FlowBoard',
+                              style: TextStyle(color: NordColors.nord8),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => FlowboardScreen(project: project),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            icon: const Icon(
+                              Icons.note_add_outlined,
+                              size: 16,
+                              color: NordColors.nord14,
+                            ),
+                            label: const Text(
+                              'Notitie',
+                              style: TextStyle(color: NordColors.nord14),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => NoteEditorScreen(projectId: project.id),
+                                ),
+                              );
+                            },
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              size: 20,
+                              color: NordColors.nord11,
+                            ),
+                            onPressed: () => ref
+                                .read(projectActionsProvider.notifier)
+                                .deleteProject(project.id),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(color: NordColors.nord2),
                     if (project.notes.isEmpty)
                       const Padding(
                         padding: EdgeInsets.all(16),
@@ -112,16 +226,26 @@ class ProjectsScreen extends ConsumerWidget {
                                     ),
                                   ),
                                 ),
-                                Text(
-                                  DateFormat('dd MMM HH:mm').format(note.createdAt),
-                                  style: const TextStyle(
-                                    color: NordColors.nord3,
-                                    fontSize: 10,
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    size: 16,
+                                    color: NordColors.nord4,
                                   ),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => NoteEditorScreen(
+                                          projectId: project.id,
+                                          initialNote: note,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
-                            const Divider(color: NordColors.nord2, height: 16),
+                            const Divider(color: NordColors.nord2, height: 12),
                             MarkdownBody(
                               data: note.content,
                               styleSheet: MarkdownStyleSheet(
