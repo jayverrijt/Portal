@@ -1,19 +1,28 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline - Portal
 
 on:
   push:
-    branches: [ main, docker, flutter ]
+    branches:
+      - main
+      - docker
   pull_request:
-    branches: [ main, docker, flutter ]
+    branches:
+      - main
+      - docker
 
 jobs:
+  # ==========================================
+  # 1. CI: .NET Backend Validatie & Tests
+  # ==========================================
   test-backend:
     name: Test .NET Backend
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Setup .NET
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
@@ -21,20 +30,25 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore Portal.sln
 
-      - name: Build Solution
+      - name: Build solution (Release)
         run: dotnet build Portal.sln --no-restore --configuration Release
 
       - name: Run Tests
         run: dotnet test Portal.sln --no-build --configuration Release --verbosity normal
 
+  # ==========================================
+  # 2. CI: Flutter Analyze & Tests
+  # ==========================================
   test-mobile:
     name: Flutter Analyze & Tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: portal_mobile
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -57,13 +71,21 @@ jobs:
       - name: Run Flutter Tests
         run: flutter test
 
-  build-mobile-release:
+  # ==========================================
+  # 3. CD: Android Release APK Bouwen
+  # ==========================================
+  build-apk:
     name: Build Android Release APK
     needs: [test-backend, test-mobile]
-    if: (github.ref == 'refs/heads/flutter' || github.ref == 'refs/heads/docker') && github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/docker')
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: portal_mobile
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -78,7 +100,6 @@ jobs:
           cache: true
 
       - name: Build APK
-        working-directory: portal_mobile
         run: |
           flutter pub get
           flutter build apk --release
@@ -88,3 +109,38 @@ jobs:
         with:
           name: portal-app-release
           path: portal_mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+  # ==========================================
+  # 4. CD: Uitlevering naar VPS Webserver
+  # ==========================================
+  deploy:
+    name: Deploy to Webserver
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-mobile]
+    if: github.ref == 'refs/heads/docker' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy via SSH to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script_stop: true
+          script: |
+            echo "Navigating to project directory..."
+            cd ${{ secrets.PROJECT_DIR }}
+
+            echo "Pulling latest changes..."
+            git fetch origin docker
+            git reset --hard origin/docker
+
+            echo "Rebuilding and restarting containers..."
+            docker compose up -d --build
+
+            echo "Cleaning up unused build cache..."
+            docker image prune -f
+
+            echo "Deployment completed successfully!"
