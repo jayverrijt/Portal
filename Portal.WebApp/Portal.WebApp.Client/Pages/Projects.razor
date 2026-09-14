@@ -93,12 +93,12 @@
                         <div class="card h-100 shadow-sm border-nord bg-nord-card d-flex flex-column">
                             <!-- KAART HEADER -->
                             <div class="card-header bg-nord-dark border-nord d-flex justify-content-between align-items-center py-3">
-                                <h5 class="card-title fw-bold m-0 text-nord-ice text-truncate" title="@project.Title">@project.Title</h5>
-                                <div class="d-flex align-items-center gap-2">
+                                <h5 class="card-title fw-bold m-0 text-nord-ice text-truncate pe-2" title="@project.Title">@project.Title</h5>
+                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
                                     <button class="btn btn-sm btn-primary" @onclick="() => _activeProjectForBoard = project">
                                         ⚡ FlowBoard
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Project Delen" @onclick="() => OpenShareModal(project)">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Project Delen & Leden Beheren" @onclick="() => OpenShareModal(project)">
                                         <i class="fa-solid fa-share-nodes"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger" title="Project Verwijderen" @onclick="() => ConfirmDeleteProject(project)">
@@ -215,7 +215,7 @@
     }
 </div>
 
-<!-- MODAL: PROJECT DELEN -->
+<!-- MODAL: PROJECT DELEN & LEDEN BEHEREN -->
 @if (_projectToShare != null)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.65); backdrop-filter: blur(2px); z-index: 1055;">
@@ -223,41 +223,77 @@
             <div class="modal-content border-nord shadow-lg">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold text-nord-snow">
-                        <i class="fa-solid fa-share-nodes me-2 text-nord-ice"></i>Project Delen
+                        <i class="fa-solid fa-share-nodes me-2 text-nord-ice"></i>Toegang Beheren: @_projectToShare.Title
                     </h5>
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
                 </div>
                 <div class="modal-body">
                     @if (!string.IsNullOrEmpty(_shareModalErrorMessage))
                     {
-                        <div class="alert alert-danger py-2 small mb-3 border-0 text-nord-snow" role="alert">
+                        <div class="alert alert-danger py-2 px-3 small mb-3 border-0 text-nord-snow rounded-2" role="alert">
                             <i class="fa-solid fa-triangle-exclamation me-1"></i> @_shareModalErrorMessage
                         </div>
                     }
 
-                    <p class="text-nord-snow small mb-3">
-                        Geef een ander account toegang tot <strong class="text-nord-ice">@_projectToShare.Title</strong>. De gebruiker kan hierdoor ook alle gekoppelde notities en taken inzien.
-                    </p>
-
-                    <div class="mb-3">
-                        <label class="form-label text-nord-snow small fw-semibold">E-mailadres van gebruiker</label>
-                        <input type="email" class="form-control" placeholder="collega@domein.nl" @bind="_shareUserEmail" />
+                    <!-- NIEUW ACCOUNT MACHTIGEN -->
+                    <div class="mb-4">
+                        <label class="form-label text-nord-snow small fw-semibold">Nieuw account machtigen</label>
+                        <div class="input-group">
+                            <input type="email" class="form-control" placeholder="collega@domein.nl" @bind="_shareUserEmail" />
+                            <button type="button" class="btn btn-primary" @onclick="ExecuteShareProject" disabled="@_isSharing">
+                                @if (_isSharing)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-user-plus me-1"></i>
+                                }
+                                <span>Delen</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer border-nord">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Annuleren</button>
-                    <button type="button" class="btn btn-primary" @onclick="ExecuteShareProject" disabled="@_isSharing">
-                        @if (_isSharing)
+
+                    <!-- BESTAANDE DEELNEMERS -->
+                    <div>
+                        <h6 class="text-uppercase text-nord-dim fw-bold small mb-2">Actieve Deelnemers (@_sharedMembers.Count)</h6>
+                        @if (_isLoadingMembers)
                         {
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            <span>Delen...</span>
+                            <div class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-nord-ice" role="status"></div>
+                                <span class="ms-2 small text-nord-dim">Leden ophalen...</span>
+                            </div>
+                        }
+                        else if (!_sharedMembers.Any())
+                        {
+                            <div class="p-3 bg-nord-dark rounded border border-nord text-center">
+                                <p class="text-nord-dim small mb-0 fst-italic">Dit project is nog niet gedeeld met andere accounts.</p>
+                            </div>
                         }
                         else
                         {
-                            <i class="fa-solid fa-paper-plane me-1"></i>
-                            <span>Delen</span>
+                            <div class="list-group list-group-flush rounded border border-nord">
+                                @foreach (var member in _sharedMembers)
+                                {
+                                    <div class="list-group-item bg-nord-dark border-nord d-flex justify-content-between align-items-center py-2 px-3">
+                                        <div class="d-flex align-items-center gap-2 text-truncate pe-2">
+                                            <i class="fa-solid fa-user text-nord-ice small"></i>
+                                            <span class="text-nord-snow small text-truncate">@member.Email</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 flex-shrink-0"
+                                                title="Toegang direct intrekken"
+                                                @onclick="() => RevokeShare(member.Id, member.Email)"
+                                                disabled="@_isRevoking">
+                                            <i class="fa-solid fa-user-minus me-1"></i> Intrekken
+                                        </button>
+                                    </div>
+                                }
+                            </div>
                         }
-                    </button>
+                    </div>
+                </div>
+                <div class="modal-footer border-nord">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="CloseModals">Sluiten</button>
                 </div>
             </div>
         </div>
@@ -378,11 +414,14 @@
     private ProjectDto? _activeProjectForNotes;
     private ProjectDto? _activeProjectForBoard;
 
-    // Sharing state
+    // Sharing & Member state
     private ProjectDto? _projectToShare;
     private string _shareUserEmail = string.Empty;
     private string? _shareModalErrorMessage;
     private bool _isSharing;
+    private bool _isLoadingMembers;
+    private bool _isRevoking;
+    private List<ProjectMemberViewDto> _sharedMembers = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -408,11 +447,29 @@
         }
     }
 
-    private void OpenShareModal(ProjectDto project)
+    private async Task OpenShareModal(ProjectDto project)
     {
         _projectToShare = project;
         _shareUserEmail = string.Empty;
         _shareModalErrorMessage = null;
+        await LoadMembers(project.Id);
+    }
+
+    private async Task LoadMembers(Guid projectId)
+    {
+        _isLoadingMembers = true;
+        try
+        {
+            _sharedMembers = await Http.GetFromJsonAsync<List<ProjectMemberViewDto>>($"api/project/{projectId}/members") ?? new();
+        }
+        catch
+        {
+            _sharedMembers = new();
+        }
+        finally
+        {
+            _isLoadingMembers = false;
+        }
     }
 
     private async Task ExecuteShareProject()
@@ -436,8 +493,9 @@
             if (response.IsSuccessStatusCode)
             {
                 var targetEmail = _shareUserEmail;
-                CloseModals();
-                _successMessage = $"Project '{_projectToShare.Title}' is succesvol gedeeld met {targetEmail}.";
+                _shareUserEmail = string.Empty;
+                _successMessage = $"Project '{_projectToShare.Title}' is gedeeld met {targetEmail}.";
+                await LoadMembers(_projectToShare.Id);
                 await LoadProjects();
             }
             else
@@ -453,6 +511,38 @@
         finally
         {
             _isSharing = false;
+        }
+    }
+
+    private async Task RevokeShare(string userId, string email)
+    {
+        if (_projectToShare == null) return;
+
+        _isRevoking = true;
+        _shareModalErrorMessage = null;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"api/project/{_projectToShare.Id}/share/{userId}");
+            if (response.IsSuccessStatusCode)
+            {
+                _sharedMembers.RemoveAll(m => m.Id == userId);
+                _successMessage = $"Toegang voor {email} is ingetrokken.";
+                await LoadProjects();
+            }
+            else
+            {
+                var errorObj = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+                _shareModalErrorMessage = errorObj?.Message ?? "Kon toegang niet intrekken.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _shareModalErrorMessage = $"Verbindingsfout: {ex.Message}";
+        }
+        finally
+        {
+            _isRevoking = false;
         }
     }
 
@@ -603,6 +693,13 @@
         {
             _errorMessage = $"Fout bij verwijderen actiepunt: {ex.Message}";
         }
+    }
+
+    public class ProjectMemberViewDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
     }
 
     private class ApiErrorResponse

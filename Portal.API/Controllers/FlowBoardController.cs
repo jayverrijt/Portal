@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,9 +23,31 @@ public class FlowBoardController : ControllerBase
         _context = context;
     }
 
+    private string? GetCurrentUserId() =>
+        User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    private async Task<bool> UserHasBoardAccess(Guid boardId, string userId)
+    {
+        return await _context.KanbanBoards
+            .Include(b => b.Project)
+                .ThenInclude(p => p!.SharedWithUsers)
+            .AnyAsync(b => b.Id == boardId && (
+                b.Project == null 
+                || b.Project.OwnerId == userId 
+                || b.Project.SharedWithUsers.Any(u => u.Id == userId)
+            ));
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<KanbanCardDto>>> GetCards([FromQuery] Guid boardId)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
+        if (!await UserHasBoardAccess(boardId, currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Geen toegang tot dit FlowBoard." });
+
         var cards = await _context.KanbanCards
             .Include(c => c.Labels)
             .AsNoTracking()
@@ -57,11 +80,15 @@ public class FlowBoardController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<KanbanCardDto>> CreateCard([FromBody] CreateKanbanCardDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title))
-            return BadRequest("Kaarttitel is verplicht.");
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
 
-        var board = await _unitOfWork.KanbanBoards.GetByIdAsync(dto.BoardId);
-        if (board == null) return NotFound("Bord niet gevonden.");
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            return BadRequest(new { message = "Kaarttitel is verplicht." });
+
+        if (!await UserHasBoardAccess(dto.BoardId, currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Geen schrijfrechten op dit FlowBoard." });
 
         var card = new KanbanCard
         {
@@ -107,8 +134,15 @@ public class FlowBoardController : ControllerBase
     [HttpPatch("{id:guid}/status")]
     public async Task<IActionResult> UpdateCardStatus(Guid id, [FromBody] UpdateKanbanCardStatusDto dto)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
         var card = await _unitOfWork.KanbanCards.GetByIdAsync(id);
-        if (card == null) return NotFound("Kaart niet gevonden.");
+        if (card == null) return NotFound(new { message = "Kaart niet gevonden." });
+
+        if (!await UserHasBoardAccess(card.BoardId, currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Geen rechten om kaarten op dit bord te verplaatsen." });
 
         card.Status = dto.Status;
         card.UpdatedAt = DateTime.UtcNow;
@@ -122,11 +156,18 @@ public class FlowBoardController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<KanbanCardDto>> UpdateCard(Guid id, [FromBody] UpdateKanbanCardDto dto)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
         var card = await _context.KanbanCards
             .Include(c => c.Labels)
             .FirstOrDefaultAsync(c => c.Id == id);
 
-        if (card == null) return NotFound("Kaart niet gevonden.");
+        if (card == null) return NotFound(new { message = "Kaart niet gevonden." });
+
+        if (!await UserHasBoardAccess(card.BoardId, currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Geen bewerkrechten op dit FlowBoard." });
 
         card.Title = dto.Title.Trim();
         card.Description = dto.Description;
@@ -173,8 +214,15 @@ public class FlowBoardController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteCard(Guid id)
     {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
         var card = await _unitOfWork.KanbanCards.GetByIdAsync(id);
-        if (card == null) return NotFound("Kaart niet gevonden.");
+        if (card == null) return NotFound(new { message = "Kaart niet gevonden." });
+
+        if (!await UserHasBoardAccess(card.BoardId, currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Geen rechten om kaarten op dit bord te wissen." });
 
         _unitOfWork.KanbanCards.Delete(card);
         await _unitOfWork.CompleteAsync();

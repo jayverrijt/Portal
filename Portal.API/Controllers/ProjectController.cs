@@ -34,12 +34,8 @@ public class ProjectController : ControllerBase
         if (string.IsNullOrEmpty(currentUserId))
             return Unauthorized(new { message = "Geen geldige sessie. Log opnieuw in." });
 
-        // Alleen projecten van de user zelf óf die expliciet met hem gedeeld zijn
-        var allProjects = await _unitOfWork.Projects.GetAllAsync();
-        var projects = allProjects
-            .Where(p => p.OwnerId == currentUserId || p.SharedWithUsers.Any(u => u.Id == currentUserId))
-            .ToList();
-
+        // Gebruik repository met eager loading (.Include(p => p.SharedWithUsers))
+        var projects = (await _unitOfWork.Projects.GetProjectsForUserAsync(currentUserId)).ToList();
         var allowedProjectIds = projects.Select(p => p.Id).ToHashSet();
 
         var allNotes = (await _unitOfWork.Notes.GetAllAsync())
@@ -88,11 +84,10 @@ public class ProjectController : ControllerBase
         if (string.IsNullOrEmpty(currentUserId))
             return Unauthorized(new { message = "Geen geldige sessie." });
 
-        var project = await _unitOfWork.Projects.GetByIdAsync(id);
+        var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(id);
         if (project == null) 
             return NotFound(new { message = "Project niet gevonden." });
 
-        // Autorisatiecheck
         if (project.OwnerId != currentUserId && !project.SharedWithUsers.Any(u => u.Id == currentUserId))
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "Je hebt geen toegang tot dit project." });
 
@@ -168,7 +163,7 @@ public class ProjectController : ControllerBase
         if (string.IsNullOrEmpty(currentUserId))
             return Unauthorized(new { message = "Geen geldige sessie." });
 
-        var project = await _unitOfWork.Projects.GetByIdAsync(projectId);
+        var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(projectId);
         if (project == null)
             return NotFound(new { message = "Project niet gevonden." });
 
@@ -195,6 +190,56 @@ public class ProjectController : ControllerBase
         return Ok(new { message = $"Project succesvol gedeeld met {targetUser.Email}." });
     }
 
+    [HttpGet("{projectId:guid}/members")]
+    public async Task<IActionResult> GetProjectMembers(Guid projectId)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
+        var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(projectId);
+        if (project == null)
+            return NotFound(new { message = "Project niet gevonden." });
+
+        if (project.OwnerId != currentUserId && !project.SharedWithUsers.Any(u => u.Id == currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Geen toegang tot dit project." });
+
+        var members = project.SharedWithUsers.Select(u => new ProjectMemberDto
+        {
+            Id = u.Id,
+            Email = u.Email ?? string.Empty,
+            UserName = u.UserName ?? string.Empty
+        }).ToList();
+
+        return Ok(members);
+    }
+
+    [HttpDelete("{projectId:guid}/share/{targetUserId}")]
+    public async Task<IActionResult> UnshareProject(Guid projectId, string targetUserId)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return Unauthorized(new { message = "Geen geldige sessie." });
+
+        var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(projectId);
+        if (project == null)
+            return NotFound(new { message = "Project niet gevonden." });
+
+        // Alleen eigenaar mag iemand verwijderen, óf een gedeelde gebruiker mag zichzelf verwijderen
+        if (project.OwnerId != currentUserId && currentUserId != targetUserId)
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Alleen de eigenaar kan shares intrekken." });
+
+        var userToRemove = project.SharedWithUsers.FirstOrDefault(u => u.Id == targetUserId);
+        if (userToRemove == null)
+            return NotFound(new { message = "Gebruiker heeft geen toegang tot dit project." });
+
+        project.SharedWithUsers.Remove(userToRemove);
+        _unitOfWork.Projects.Update(project);
+        await _unitOfWork.CompleteAsync();
+
+        return Ok(new { message = $"Toegang voor {userToRemove.Email} succesvol ingetrokken." });
+    }
+
     [HttpPost("{projectId:guid}/notes")]
     public async Task<ActionResult<NoteDto>> AddNoteToProject(Guid projectId, CreateNoteForProjectDto dto)
     {
@@ -202,7 +247,7 @@ public class ProjectController : ControllerBase
         if (string.IsNullOrEmpty(currentUserId))
             return Unauthorized(new { message = "Geen geldige sessie." });
 
-        var project = await _unitOfWork.Projects.GetByIdAsync(projectId);
+        var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(projectId);
         if (project == null) 
             return NotFound(new { message = "Project niet gevonden." });
 
@@ -237,7 +282,7 @@ public class ProjectController : ControllerBase
         if (string.IsNullOrEmpty(currentUserId))
             return Unauthorized(new { message = "Geen geldige sessie." });
 
-        var project = await _unitOfWork.Projects.GetByIdAsync(projectId);
+        var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(projectId);
         if (project == null) 
             return NotFound(new { message = "Project niet gevonden." });
 
@@ -275,7 +320,7 @@ public class ProjectController : ControllerBase
         if (string.IsNullOrEmpty(currentUserId))
             return Unauthorized(new { message = "Geen geldige sessie." });
 
-        var project = await _unitOfWork.Projects.GetByIdAsync(id);
+        var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(id);
         if (project == null) 
             return NotFound(new { message = "Project niet gevonden." });
 
@@ -290,3 +335,10 @@ public class ProjectController : ControllerBase
 }
 
 public record ShareProjectRequest(string Email);
+
+public class ProjectMemberDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+}

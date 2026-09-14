@@ -5,19 +5,23 @@
 
 @if (IsOpen)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.7); backdrop-filter: blur(2px); z-index: 1055;">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-height: 90vh;">
-            <div class="modal-content border-nord shadow-lg" style="max-height: 90vh; display: flex; flex-direction: column;">
-                <div class="modal-header flex-shrink-0">
-                    <h5 class="modal-title fw-bold text-nord-snow">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.75); backdrop-filter: blur(3px); z-index: 1055;">
+        <div class="modal-dialog modal-lg modal-dialog-centered" style="max-height: 85vh; margin: 1.75rem auto;">
+            <div class="modal-content border-nord shadow-lg" style="height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
+                
+                <!-- VASTE HEADER -->
+                <div class="modal-header bg-nord-dark border-nord flex-shrink-0 px-4 py-3">
+                    <h5 class="modal-title fw-bold text-nord-snow m-0">
                         <i class="fa-solid fa-book-open me-2 text-nord-ice"></i>Notities: @(Project?.Title ?? "Project")
                     </h5>
                     <button type="button" class="btn-close" @onclick="Close"></button>
                 </div>
-                <div class="modal-body overflow-y-auto p-4" style="flex: 1 1 auto; min-height: 0;">
-                    <!-- NIEUWE NOTITIE FORMULIER MET RICH EDITOR -->
+
+                <!-- SCROLLBARE BODY -->
+                <div class="modal-body p-4 overflow-y-auto flex-grow-1" style="min-height: 0;">
+                    <!-- NIEUWE NOTITIE FORMULIER -->
                     <div class="p-3 bg-nord-dark rounded border border-nord mb-4 shadow-sm">
-                        <h6 class="fw-bold text-nord-snow mb-3">Nieuwe Aantekening Toevoegen</h6>
+                        <h6 class="fw-bold text-nord-snow mb-2 small text-uppercase">Nieuwe Aantekening Toevoegen</h6>
                         <div class="mb-2">
                             <input type="text" class="form-control" placeholder="Titel van de notitie..." @bind="_newNoteTitle" />
                         </div>
@@ -40,7 +44,7 @@
                         </div>
                     </div>
 
-                    <!-- BESTAANDE NOTITIES LIJST MET MARKDOWN RENDERING -->
+                    <!-- BESTAANDE NOTITIES -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold text-nord-dim text-uppercase small m-0">Bestaande Aantekeningen (@Notes.Count)</h6>
                     </div>
@@ -56,11 +60,11 @@
                         <div class="d-flex flex-column gap-3">
                             @foreach (var note in Notes.OrderByDescending(n => n.CreatedAt))
                             {
-                                <div class="bg-nord-dark rounded border border-nord shadow-sm d-flex flex-column" style="max-height: 280px;">
-                                    <div class="d-flex justify-content-between align-items-center py-2 px-3 border-bottom border-nord flex-shrink-0 bg-nord-card rounded-top">
-                                        <strong class="text-nord-ice text-truncate pe-2" title="@note.Title">@note.Title</strong>
+                                <div class="bg-nord-dark rounded border border-nord shadow-sm d-flex flex-column flex-shrink-0" style="max-height: 250px; overflow: hidden;">
+                                    <div class="d-flex justify-content-between align-items-center py-2 px-3 border-bottom border-nord flex-shrink-0 bg-nord-card">
+                                        <strong class="text-nord-ice text-truncate pe-2 small" title="@note.Title">@note.Title</strong>
                                         <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                            <span class="text-nord-dim small" style="font-size: 0.75rem;">
+                                            <span class="text-nord-dim" style="font-size: 0.72rem;">
                                                 @note.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
                                             </span>
                                             <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="Verwijderen" @onclick="() => DeleteNote(note.Id)">
@@ -68,7 +72,7 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="p-3 overflow-y-auto text-nord-snow" style="min-height: 0; font-size: 0.88rem; line-height: 1.5;">
+                                    <div class="p-3 overflow-y-auto text-nord-snow flex-grow-1" style="font-size: 0.85rem; line-height: 1.5; min-height: 0;">
                                         <MarkdownView Content="@note.Content" />
                                     </div>
                                 </div>
@@ -76,8 +80,10 @@
                         </div>
                     }
                 </div>
-                <div class="modal-footer flex-shrink-0 border-nord">
-                    <button type="button" class="btn btn-secondary" @onclick="Close">Sluiten</button>
+
+                <!-- VASTE FOOTER -->
+                <div class="modal-footer bg-nord-dark border-nord flex-shrink-0 px-4 py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="Close">Sluiten</button>
                 </div>
             </div>
         </div>
