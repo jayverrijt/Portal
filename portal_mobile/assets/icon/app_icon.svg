@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Donkere achtergrond tegel -->
+  <rect width="512" height="512" rx="110" fill="#2E3440"/>
+  <!-- Cirkel badge -->
+  <circle cx="256" cy="256" r="190" fill="#3B4252"/>
+  <!-- Nord Gele Bliksemschicht -->
+  <path d="M285 105 L175 260 L245 260 L220 405 L345 235 L270 235 Z" 
+        fill="#EBCB8B" stroke="#EBCB8B" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

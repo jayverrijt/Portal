@@ -4,12 +4,16 @@ on:
   push:
     branches:
       - docker
+  pull_request:
+    branches:
+      - docker
 
 jobs:
   # ==========================================
-  # 1. CI (Continuous Integration): Validatie
+  # 1. CI: .NET Backend Validatie & Tests
   # ==========================================
-  build-and-test:
+  test-backend:
+    name: Test .NET Backend
     runs-on: ubuntu-latest
 
     steps:
@@ -24,15 +28,95 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore Portal.sln
 
-      - name: Build solution (check op compileerfouten)
+      - name: Build solution (Release)
         run: dotnet build Portal.sln --no-restore --configuration Release
 
+      - name: Run Tests
+        run: dotnet test Portal.sln --no-build --configuration Release --verbosity normal
+
   # ==========================================
-  # 2. CD (Continuous Deployment): Uitlevering
+  # 2. CI: Flutter Analyze & Tests
+  # ==========================================
+  test-mobile:
+    name: Flutter Analyze & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: portal_mobile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze code
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Flutter Tests
+        run: flutter test
+
+  # ==========================================
+  # 3. CD: Android Release APK Bouwen
+  # ==========================================
+  build-apk:
+    name: Build Android Release APK
+    needs: [test-backend, test-mobile]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/docker')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: portal_mobile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-app-release
+          path: portal_mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+  # ==========================================
+  # 4. CD: Uitlevering naar VPS Webserver
   # ==========================================
   deploy:
+    name: Deploy to Webserver
     runs-on: ubuntu-latest
-    needs: build-and-test  # Draait pas als de build 100% slaagt
+    needs: [test-backend, test-mobile]
+    if: github.ref == 'refs/heads/docker' && github.event_name == 'push'
 
     steps:
       - name: Deploy via SSH to VPS
