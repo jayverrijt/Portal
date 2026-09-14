@@ -54,83 +54,137 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
     });
   }
 
-  void _showAddDialog() {
-    showDialog(
+  // HCD-vriendelijke bottom sheet voor het loggen van gewicht
+  void _showAddBottomSheet() {
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: NordColors.nord1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: NordColors.nord1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Gewicht Loggen', style: TextStyle(color: NordColors.nord6)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Ochtend / Avond toggle in dialog
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Ochtend'),
-                    selected: _selectedSession == 'Ochtend',
-                    selectedColor: NordColors.nord13,
-                    backgroundColor: NordColors.nord0,
-                    labelStyle: TextStyle(
-                      color: _selectedSession == 'Ochtend' ? NordColors.nord0 : NordColors.nord4,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    onSelected: (selected) {
-                      setDialogState(() => _selectedSession = 'Ochtend');
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  ChoiceChip(
-                    label: const Text('Avond'),
-                    selected: _selectedSession == 'Avond',
-                    selectedColor: NordColors.nord9,
-                    backgroundColor: NordColors.nord0,
-                    labelStyle: TextStyle(
-                      color: _selectedSession == 'Avond' ? NordColors.nord0 : NordColors.nord4,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    onSelected: (selected) {
-                      setDialogState(() => _selectedSession = 'Avond');
-                      setState(() {});
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _weightController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                autofocus: true,
-                style: const TextStyle(color: NordColors.nord6),
-                decoration: InputDecoration(
-                  hintText: 'Bijv. 80.5',
-                  hintStyle: const TextStyle(color: NordColors.nord3),
-                  filled: true,
-                  fillColor: NordColors.nord0,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                ),
-              ),
-            ],
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Annuleren', style: TextStyle(color: NordColors.nord4)),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.monitor_weight_outlined, color: NordColors.nord8, size: 22),
+                        SizedBox(width: 8),
+                        Text(
+                          'Gewicht Loggen',
+                          style: TextStyle(
+                            color: NordColors.nord6,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: NordColors.nord4),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Center(child: Text('Ochtend')),
+                        selected: _selectedSession == 'Ochtend',
+                        selectedColor: NordColors.nord13.withValues(alpha: 0.3),
+                        backgroundColor: NordColors.nord0,
+                        labelStyle: TextStyle(
+                          color: _selectedSession == 'Ochtend' ? NordColors.nord13 : NordColors.nord4,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        onSelected: (selected) {
+                          setSheetState(() => _selectedSession = 'Ochtend');
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Center(child: Text('Avond')),
+                        selected: _selectedSession == 'Avond',
+                        selectedColor: NordColors.nord9.withValues(alpha: 0.3),
+                        backgroundColor: NordColors.nord0,
+                        labelStyle: TextStyle(
+                          color: _selectedSession == 'Avond' ? NordColors.nord9 : NordColors.nord4,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        onSelected: (selected) {
+                          setSheetState(() => _selectedSession = 'Avond');
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _weightController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  autofocus: true,
+                  style: const TextStyle(color: NordColors.nord6),
+                  decoration: InputDecoration(
+                    labelText: 'Gewicht in kg (bijv. 80.5)',
+                    labelStyle: const TextStyle(color: NordColors.nord4),
+                    filled: true,
+                    fillColor: NordColors.nord0,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: NordColors.nord2,
+                          foregroundColor: NordColors.nord6,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Annuleren'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: NordColors.nord8,
+                          foregroundColor: NordColors.nord0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: _addWeight,
+                        child: const Text('Opslaan', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: NordColors.nord8,
-                foregroundColor: NordColors.nord0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: _addWeight,
-              child: const Text('Opslaan'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -138,7 +192,6 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Filter entries op basis van geselecteerde sessie (Ochtend / Avond)
     final filteredEntries = _entries.where((e) => e.session == _selectedSession).toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
@@ -154,13 +207,12 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: NordColors.nord8,
         foregroundColor: NordColors.nord0,
-        onPressed: _showAddDialog,
+        onPressed: _showAddBottomSheet,
         child: const Icon(Icons.add),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Header met Ochtend / Avond Toggle exact zoals webapp
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -179,7 +231,6 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
                     Text('Laatst: $latest kg', style: const TextStyle(color: NordColors.nord13, fontSize: 13)),
                   ],
                 ),
-                // Toggle Knoppen
                 Row(
                   children: [
                     GestureDetector(
@@ -209,8 +260,6 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Grafiek Container (Strakke lijn met punten zoals op de foto)
           Container(
             height: 240,
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
@@ -227,8 +276,6 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
             ),
           ),
           const SizedBox(height: 20),
-
-          // Historie & CRUD lijst
           const Text('Metingen Beheren', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 10),
           ..._entries.reversed.map((entry) => Container(
@@ -272,7 +319,6 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
   }
 }
 
-// Custom Painter om exact de lijn en punten te tekenen zoals in je webapp
 class WeightChartPainter extends CustomPainter {
   final List<WeightEntry> entries;
 
@@ -283,7 +329,7 @@ class WeightChartPainter extends CustomPainter {
     if (entries.isEmpty) return;
 
     final paintLine = Paint()
-      ..color = NordColors.nord13 // Lichtgele/gouden accentkleur
+      ..color = NordColors.nord13
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -296,7 +342,6 @@ class WeightChartPainter extends CustomPainter {
       ..color = NordColors.nord2.withValues(alpha: 0.4)
       ..strokeWidth = 1;
 
-    // Min en Max waarden bepalen voor de Y-as schaal
     double minW = entries.map((e) => e.weight).reduce((a, b) => a < b ? a : b) - 1;
     double maxW = entries.map((e) => e.weight).reduce((a, b) => a > b ? a : b) + 1;
     if (minW == maxW) {
@@ -304,13 +349,11 @@ class WeightChartPainter extends CustomPainter {
       maxW += 2;
     }
 
-    // Teken horizontale hulplijnen (grid)
     const steps = 4;
     for (int i = 0; i <= steps; i++) {
       double y = size.height / steps * i;
       canvas.drawLine(Offset(30, y), Offset(size.width, y), paintGrid);
 
-      // Y-as labels
       double val = maxW - ((maxW - minW) / steps * i);
       final textSpan = TextSpan(
         text: val.toStringAsFixed(1),
@@ -339,14 +382,11 @@ class WeightChartPainter extends CustomPainter {
       }
     }
 
-    // Teken de lijn
     canvas.drawPath(path, paintLine);
 
-    // Teken datapunten en labels boven de punten
     for (int i = 0; i < points.length; i++) {
       canvas.drawCircle(points[i], 4, paintPoint);
 
-      // Waarde label boven de punt
       final textSpan = TextSpan(
         text: '${entries[i].weight.toStringAsFixed(1)}',
         style: const TextStyle(color: NordColors.nord13, fontSize: 11, fontWeight: FontWeight.bold),
@@ -358,7 +398,6 @@ class WeightChartPainter extends CustomPainter {
       textPainter.layout();
       textPainter.paint(canvas, Offset(points[i].dx - 12, points[i].dy - 20));
 
-      // Datum label onderaan
       final dateSpan = TextSpan(
         text: '${entries[i].date.day} ${_getMonthName(entries[i].date.month)}',
         style: const TextStyle(color: NordColors.nord4, fontSize: 10),

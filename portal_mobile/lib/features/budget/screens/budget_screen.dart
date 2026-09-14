@@ -9,6 +9,167 @@ import '../providers/budget_provider.dart';
 class BudgetScreen extends ConsumerWidget {
   const BudgetScreen({super.key});
 
+  // HCD-vriendelijke bottom sheet voor het toevoegen van een transactie/mutatie
+  void _showAddTransactionDialog(BuildContext context, WidgetRef ref) {
+    final descController = TextEditingController();
+    final amountController = TextEditingController();
+    bool isExpense = true;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: NordColors.nord1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.add_card_outlined, color: NordColors.nord8, size: 22),
+                          SizedBox(width: 8),
+                          Text(
+                            'Nieuwe Transactie',
+                            style: TextStyle(
+                              color: NordColors.nord6,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: NordColors.nord4),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Center(child: Text('Uitgave')),
+                          selected: isExpense,
+                          selectedColor: NordColors.nord11.withValues(alpha: 0.3),
+                          backgroundColor: NordColors.nord0,
+                          labelStyle: TextStyle(
+                            color: isExpense ? NordColors.nord11 : NordColors.nord4,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          onSelected: (val) => setModalState(() => isExpense = true),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Center(child: Text('Inkomen')),
+                          selected: !isExpense,
+                          selectedColor: NordColors.nord14.withValues(alpha: 0.3),
+                          backgroundColor: NordColors.nord0,
+                          labelStyle: TextStyle(
+                            color: !isExpense ? NordColors.nord14 : NordColors.nord4,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          onSelected: (val) => setModalState(() => isExpense = false),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: descController,
+                    autofocus: true,
+                    style: const TextStyle(color: NordColors.nord6),
+                    decoration: InputDecoration(
+                      labelText: 'Omschrijving (bijv. Supermarkt)',
+                      labelStyle: const TextStyle(color: NordColors.nord4),
+                      filled: true,
+                      fillColor: NordColors.nord0,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(color: NordColors.nord6),
+                    decoration: InputDecoration(
+                      labelText: 'Bedrag (€)',
+                      labelStyle: const TextStyle(color: NordColors.nord4),
+                      filled: true,
+                      fillColor: NordColors.nord0,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: NordColors.nord2,
+                            foregroundColor: NordColors.nord6,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('Annuleren'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: NordColors.nord8,
+                            foregroundColor: NordColors.nord0,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () async {
+                            final desc = descController.text.trim();
+                            final amount = double.tryParse(amountController.text.replaceAll(',', '.')) ?? 0.0;
+                            if (desc.isNotEmpty && amount > 0) {
+                              // Hier kun je jouw budget actie / provider aanroepen om toe te voegen
+                              Navigator.of(ctx).pop();
+                              ref.refresh(budgetOverviewProvider);
+                            }
+                          },
+                          child: const Text('Toevoegen', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final overviewAsync = ref.watch(budgetOverviewProvider);
@@ -85,7 +246,7 @@ class BudgetScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.home_outlined, color: NordColors.nord4),
-              title: const Text('Home', style: TextStyle(color: NordColors.nord4)),
+              title: const Text('Dashboard', style: TextStyle(color: NordColors.nord4)),
               onTap: () {
                 Navigator.of(context).pop();
                 context.go('/home');
@@ -100,8 +261,24 @@ class BudgetScreen extends ConsumerWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.view_kanban_outlined, color: NordColors.nord4),
+              title: const Text('FlowBoards', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/flowboards');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.note_alt_outlined, color: NordColors.nord4),
+              title: const Text('Notities', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/notes');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord8),
-              title: const Text('Budget & Financiën', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.w600)),
+              title: const Text('Financiën', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.w600)),
               selected: true,
               selectedTileColor: NordColors.nord2.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -109,8 +286,7 @@ class BudgetScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.widgets_outlined, color: NordColors.nord4),
-              title: const Text('Tools', style: TextStyle(color: NordColors.nord4)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              title: const Text('Utils', style: TextStyle(color: NordColors.nord4)),
               onTap: () {
                 Navigator.of(context).pop();
                 context.go('/tools');
@@ -133,6 +309,12 @@ class BudgetScreen extends ConsumerWidget {
             const SizedBox(height: 12),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: NordColors.nord8,
+        foregroundColor: NordColors.nord0,
+        onPressed: () => _showAddTransactionDialog(context, ref),
+        child: const Icon(Icons.add),
       ),
       body: overviewAsync.when(
         loading: () => const Center(

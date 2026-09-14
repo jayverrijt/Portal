@@ -24,8 +24,23 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.initialNote?.title ?? '');
-    _contentController = TextEditingController(text: widget.initialNote?.content ?? '');
+
+    // Dynamisch uitlezen of initialNote een Map (JSON) of een object is
+    String initialTitle = '';
+    String initialContent = '';
+
+    if (widget.initialNote != null) {
+      if (widget.initialNote is Map) {
+        initialTitle = widget.initialNote['title'] ?? '';
+        initialContent = widget.initialNote['content'] ?? '';
+      } else {
+        initialTitle = widget.initialNote.title ?? '';
+        initialContent = widget.initialNote.content ?? '';
+      }
+    }
+
+    _titleController = TextEditingController(text: initialTitle);
+    _contentController = TextEditingController(text: initialContent);
   }
 
   @override
@@ -49,19 +64,30 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     try {
       final notifier = ref.read(projectActionsProvider.notifier);
 
+      // Haal het ID veilig op uit ofwel een Map of een object
+      String? noteId;
+      if (widget.initialNote != null) {
+        if (widget.initialNote is Map) {
+          noteId = widget.initialNote['id']?.toString();
+        } else {
+          noteId = widget.initialNote.id?.toString();
+        }
+      }
+
       final success = await notifier.saveNote(
-        noteId: widget.initialNote?.id,
+        noteId: noteId,
         projectId: widget.projectId,
         title: title,
         content: content,
       );
 
       if (success && mounted) {
-        // Forceer direct verversing van zowel de notities als de projectenlijst
-        ref.invalidate(projectNotesProvider(widget.projectId));
+        // Forceer direct verversing
+        if (widget.projectId.isNotEmpty) {
+          ref.invalidate(projectNotesProvider(widget.projectId));
+        }
         ref.invalidate(projectsProvider);
 
-        // Kleine pauze zodat de provider de nieuwe data ophaalt voordat we terugkeren
         await Future.delayed(const Duration(milliseconds: 50));
 
         if (mounted) {

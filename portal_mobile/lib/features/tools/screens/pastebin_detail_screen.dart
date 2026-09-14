@@ -1,140 +1,181 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/nord_theme.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../budget/providers/budget_provider.dart';
 
-class PasteItem {
-  final String id;
-  final String content;
-  final DateTime createdAt;
+// Definieer of importeer hier de apiClientProvider indien deze elders staat.
+// (Controleer of jouw api client provider hier correct wordt ingeladen)
 
-  PasteItem({required this.id, required this.content, required this.createdAt});
-}
+// Provider om de pastebin buffer op te halen van de API (/api/Pastebin)
+final pastebinProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  final client = ref.watch(apiClientProvider);
+  try {
+    final res = await client.dio.get('/Pastebin');
+    if (res.statusCode == 200 && res.data is Map) {
+      return res.data as Map<String, dynamic>;
+    }
+  } catch (e) {
+    debugPrint('Fout bij ophalen pastebin: $e');
+  }
+  return {'content': '', 'updatedAt': DateTime.now().toIso8601String()};
+});
 
-class PastebinDetailScreen extends StatefulWidget {
+class PastebinDetailScreen extends ConsumerStatefulWidget {
   const PastebinDetailScreen({super.key});
 
   @override
-  State<PastebinDetailScreen> createState() => _PastebinDetailScreenState();
+  ConsumerState<PastebinDetailScreen> createState() => _PastebinDetailScreenState();
 }
 
-class _PastebinDetailScreenState extends State<PastebinDetailScreen> {
-  final List<PasteItem> _pastes = [
-    PasteItem(id: '1', content: 'docker-compose up -d --build', createdAt: DateTime.now()),
-  ];
+class _PastebinDetailScreenState extends ConsumerState<PastebinDetailScreen> {
+  final _controller = TextEditingController();
+  bool _isLoading = false;
+  bool _isInitialized = false;
 
-  final _pasteController = TextEditingController();
-
-  void _createPaste() {
-    final text = _pasteController.text.trim();
-    if (text.isNotEmpty) {
-      setState(() {
-        _pastes.add(PasteItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          content: text,
-          createdAt: DateTime.now(),
-        ));
-        _pasteController.clear();
-      });
+  Future<void> _savePaste(String content) async {
+    setState(() => _isLoading = true);
+    try {
+      final client = ref.read(apiClientProvider);
+      // POST naar /api/Pastebin overeenkomstig met je ASP.NET Controller [HttpPost] Save([FromBody] PastebinDto dto)
+      await client.dio.post('/Pastebin', data: {'content': content});
+      ref.invalidate(pastebinProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pastebin buffer succesvol opgeslagen')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij opslaan: $e'), backgroundColor: NordColors.nord11),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _deletePaste(String id) {
-    setState(() {
-      _pastes.removeWhere((p) => p.id == id);
-    });
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final pasteAsync = ref.watch(pastebinProvider);
+
     return Scaffold(
       backgroundColor: NordColors.nord0,
       appBar: AppBar(
         backgroundColor: NordColors.nord1,
-        title: const Text('Pastebin', style: TextStyle(color: NordColors.nord6)),
+        title: const Text('Pastebin Buffer', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: NordColors.nord6),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: NordColors.nord4),
+            tooltip: 'Vernieuwen',
+            onPressed: () => ref.refresh(pastebinProvider),
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: NordColors.nord1,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: NordColors.nord2),
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _pasteController,
-                    maxLines: 3,
-                    style: const TextStyle(color: NordColors.nord6),
-                    decoration: InputDecoration(
-                      hintText: 'Typ of plak je snippet hier...',
-                      hintStyle: const TextStyle(color: NordColors.nord3),
-                      filled: true,
-                      fillColor: NordColors.nord0,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
+      body: pasteAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: NordColors.nord8)),
+        error: (err, _) => Center(child: Text('Fout bij laden: $err', style: const TextStyle(color: NordColors.nord11))),
+        data: (data) {
+          final content = data['content'] ?? '';
+          final updatedAtStr = data['updatedAt'];
+
+          // Initialiseer de controller eenmalig met de data van de server
+          if (!_isInitialized) {
+            _controller.text = content;
+            _isInitialized = true;
+          }
+
+          DateTime? updatedAt;
+          if (updatedAtStr != null) {
+            updatedAt = DateTime.tryParse(updatedAtStr)?.toLocal();
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Laatst bijgewerkt badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: NordColors.nord1,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: NordColors.nord2),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: NordColors.nord14,
-                        foregroundColor: NordColors.nord0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Laatst bijgewerkt:', style: TextStyle(color: NordColors.nord4, fontSize: 12)),
+                      Text(
+                        updatedAt != null ? DateFormat('dd MMM yyyy - HH:mm').format(updatedAt) : 'Onbekend',
+                        style: const TextStyle(color: NordColors.nord8, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
-                      onPressed: _createPaste,
-                      child: const Text('Create Paste', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _pastes.length,
-                itemBuilder: (context, index) {
-                  final paste = _pastes[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
+                ),
+                const SizedBox(height: 16),
+                // Hoofd-editor container
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: NordColors.nord1,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: NordColors.nord2),
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Snippet #${paste.id.substring(paste.id.length - 4)}', style: const TextStyle(color: NordColors.nord8, fontSize: 12)),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: NordColors.nord11, size: 18),
-                              onPressed: () => _deletePaste(paste.id),
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            maxLines: null,
+                            expands: true,
+                            style: const TextStyle(color: NordColors.nord6, fontFamily: 'monospace', fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Type or paste your snippet here...',
+                              hintStyle: const TextStyle(color: NordColors.nord3),
+                              filled: true,
+                              fillColor: NordColors.nord0,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.all(16),
                             ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          paste.content,
-                          style: const TextStyle(color: NordColors.nord5, fontFamily: 'monospace'),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: NordColors.nord14,
+                              foregroundColor: NordColors.nord0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: _isLoading
+                                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: NordColors.nord0))
+                                : const Icon(Icons.save_outlined, size: 18),
+                            label: Text(_isLoading ? 'Bezig met opslaan...' : 'Buffer Opslaan', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            onPressed: _isLoading ? null : () => _savePaste(_controller.text),
+                          ),
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

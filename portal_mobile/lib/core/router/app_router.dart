@@ -5,6 +5,8 @@ import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/projects/screens/projects_screen.dart';
+import '../../features/notes/screens/notes_screen.dart';
+import '../../features/projects/screens/flowboards_hub_screen.dart';
 import '../../features/budget/screens/budget_screen.dart';
 import '../../features/tools/screens/tools_screen.dart';
 
@@ -36,6 +38,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/projects',
         builder: (context, state) => const ProjectsScreen(),
+      ),
+      GoRoute(
+        path: '/flowboards',
+        builder: (context, state) => const FlowboardsHubScreen(),
+      ),
+      GoRoute(
+        path: '/notes',
+        builder: (context, state) => const NotesScreen(),
       ),
       GoRoute(
         path: '/budget',

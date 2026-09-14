@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/nord_theme.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/project_models.dart';
 import '../providers/project_provider.dart';
 
 class FlowboardScreen extends ConsumerStatefulWidget {
   final ProjectDto project;
+  final String source; // 'hub' of 'projects' om te bepalen wat gehighlight moet worden in de drawer
 
-  const FlowboardScreen({super.key, required this.project});
+  const FlowboardScreen({
+    super.key,
+    required this.project,
+    this.source = 'hub',
+  });
 
   @override
   ConsumerState<FlowboardScreen> createState() => _FlowboardScreenState();
@@ -62,6 +69,12 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: NordColors.nord1,
+        // Altijd een terug-pijl op subpagina's zodat je nooit vastzit
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: NordColors.nord6),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Row(
           children: [
             const Icon(Icons.bolt, color: NordColors.nord13, size: 20),
@@ -69,11 +82,13 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
             Expanded(
               child: Text(
                 'FlowBoard: ${widget.project.title}',
+                style: const TextStyle(color: NordColors.nord6),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
+        iconTheme: const IconThemeData(color: NordColors.nord6),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: NordColors.nord4),
@@ -88,6 +103,147 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
           labelColor: NordColors.nord8,
           unselectedLabelColor: NordColors.nord4,
           tabs: _statuses.map((s) => Tab(text: _statusLabels[s])).toList(),
+        ),
+      ),
+      drawer: Drawer(
+        backgroundColor: NordColors.nord1,
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                color: NordColors.nord0,
+                border: Border(bottom: BorderSide(color: NordColors.nord2)),
+              ),
+              child: Container(
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: NordColors.nord1,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: NordColors.nord2),
+                          ),
+                          child: const Icon(
+                            Icons.bolt,
+                            color: NordColors.nord13,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Portal',
+                          style: TextStyle(
+                            color: NordColors.nord6,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Project & Finance Suite',
+                      style: TextStyle(color: NordColors.nord4, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home_outlined, color: NordColors.nord4),
+              title: const Text('Dashboard', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/home');
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.folder_outlined,
+                color: widget.source == 'projects' ? NordColors.nord8 : NordColors.nord4,
+              ),
+              title: Text(
+                'Projecten',
+                style: TextStyle(
+                  color: widget.source == 'projects' ? NordColors.nord6 : NordColors.nord4,
+                  fontWeight: widget.source == 'projects' ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+              selected: widget.source == 'projects',
+              selectedTileColor: NordColors.nord2.withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/projects');
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.view_kanban_outlined,
+                color: widget.source == 'hub' ? NordColors.nord8 : NordColors.nord4,
+              ),
+              title: Text(
+                'FlowBoards',
+                style: TextStyle(
+                  color: widget.source == 'hub' ? NordColors.nord6 : NordColors.nord4,
+                  fontWeight: widget.source == 'hub' ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+              selected: widget.source == 'hub',
+              selectedTileColor: NordColors.nord2.withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/flowboards');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.note_alt_outlined, color: NordColors.nord4),
+              title: const Text('Notities', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/notes');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord4),
+              title: const Text('Financiën', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/budget');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.widgets_outlined, color: NordColors.nord4),
+              title: const Text('Utils', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/tools');
+              },
+            ),
+            const Spacer(),
+            const Divider(color: NordColors.nord2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: NordColors.nord11),
+                title: const Text('Uitloggen', style: TextStyle(color: NordColors.nord11)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  ref.read(authNotifierProvider.notifier).logout();
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(

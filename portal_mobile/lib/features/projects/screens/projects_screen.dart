@@ -12,108 +12,470 @@ import 'note_editor_screen.dart';
 class ProjectsScreen extends ConsumerWidget {
   const ProjectsScreen({super.key});
 
+  // HCD-vriendelijke bottom sheet voor het aanmaken van een nieuw project
   void _showNewProjectDialog(BuildContext context, WidgetRef ref) {
     final titleController = TextEditingController();
     final descController = TextEditingController();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: NordColors.nord1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Nieuw Project', style: TextStyle(color: NordColors.nord6)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              autofocus: true,
-              style: const TextStyle(color: NordColors.nord6),
-              decoration: InputDecoration(
-                labelText: 'Titel',
-                labelStyle: const TextStyle(color: NordColors.nord4),
-                filled: true,
-                fillColor: NordColors.nord0,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              style: const TextStyle(color: NordColors.nord6),
-              decoration: InputDecoration(
-                labelText: 'Beschrijving (optioneel)',
-                labelStyle: const TextStyle(color: NordColors.nord4),
-                filled: true,
-                fillColor: NordColors.nord0,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ],
+      isScrollControlled: true,
+      backgroundColor: NordColors.nord1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annuleren', style: TextStyle(color: NordColors.nord4)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.create_new_folder_outlined, color: NordColors.nord8, size: 22),
+                      SizedBox(width: 8),
+                      Text(
+                        'Nieuw Project',
+                        style: TextStyle(
+                          color: NordColors.nord6,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: NordColors.nord4),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                style: const TextStyle(color: NordColors.nord6),
+                decoration: InputDecoration(
+                  labelText: 'Project Titel',
+                  labelStyle: const TextStyle(color: NordColors.nord4),
+                  filled: true,
+                  fillColor: NordColors.nord0,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descController,
+                style: const TextStyle(color: NordColors.nord6),
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'Beschrijving (optioneel)',
+                  labelStyle: const TextStyle(color: NordColors.nord4),
+                  filled: true,
+                  fillColor: NordColors.nord0,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: NordColors.nord2,
+                        foregroundColor: NordColors.nord6,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Annuleren'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: NordColors.nord8,
+                        foregroundColor: NordColors.nord0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () async {
+                        final title = titleController.text.trim();
+                        if (title.isNotEmpty) {
+                          await ref
+                              .read(projectActionsProvider.notifier)
+                              .createProject(title, descController.text.trim());
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                        }
+                      },
+                      child: const Text('Aanmaken', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: NordColors.nord8,
-              foregroundColor: NordColors.nord0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () async {
-              final title = titleController.text.trim();
-              if (title.isNotEmpty) {
-                await ref
-                    .read(projectActionsProvider.notifier)
-                    .createProject(title, descController.text.trim());
-                if (ctx.mounted) Navigator.of(ctx).pop();
-              }
-            },
-            child: const Text('Aanmaken'),
-          ),
-        ],
+        ),
       ),
     );
   }
 
+  // HCD-vriendelijke bottom sheet voor projectverwijdering
   void _confirmDeleteProject(BuildContext context, WidgetRef ref, String projectId, String title) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: NordColors.nord1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Project verwijderen', style: TextStyle(color: NordColors.nord6)),
-        content: Text(
-          'Weet je zeker dat je "$title" wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
-          style: const TextStyle(color: NordColors.nord4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annuleren', style: TextStyle(color: NordColors.nord4)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: NordColors.nord11,
-              foregroundColor: NordColors.nord6,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await ref.read(projectActionsProvider.notifier).deleteProject(projectId);
-            },
-            child: const Text('Verwijderen'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: NordColors.nord1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: NordColors.nord11, size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      'Project Verwijderen',
+                      style: TextStyle(
+                        color: NordColors.nord6,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: NordColors.nord4),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Weet je zeker dat je "$title" wilt verwijderen? Alle bijbehorende notities en taken gaan verloren. Dit kan niet ongedaan worden gemaakt.',
+              style: const TextStyle(color: NordColors.nord4, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: NordColors.nord2,
+                      foregroundColor: NordColors.nord6,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Annuleren'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: NordColors.nord11,
+                      foregroundColor: NordColors.nord6,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      await ref.read(projectActionsProvider.notifier).deleteProject(projectId);
+                    },
+                    child: const Text('Verwijderen', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Webapp-style "Toegang Beheren" Bottom Sheet
+  void _showShareDialog(BuildContext context, WidgetRef ref, String projectId, String projectTitle) {
+    final emailController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: NordColors.nord1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final client = ref.read(apiClientProvider);
+
+            Future<List<dynamic>> fetchProjectMembers() async {
+              try {
+                final res = await client.dio.get('/Project/$projectId/members');
+                if (res.statusCode == 200 && res.data is List) {
+                  return res.data as List;
+                }
+              } catch (e) {
+                debugPrint('Fout bij ophalen members: $e');
+              }
+              return [];
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const Icon(Icons.share_outlined, color: NordColors.nord8, size: 22),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Toegang Beheren: $projectTitle',
+                                  style: const TextStyle(
+                                    color: NordColors.nord6,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: NordColors.nord4),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Nieuw account machtigen',
+                      style: TextStyle(color: NordColors.nord4, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: emailController,
+                            style: const TextStyle(color: NordColors.nord6),
+                            decoration: InputDecoration(
+                              hintText: 'collega@domein.nl',
+                              hintStyle: const TextStyle(color: NordColors.nord3),
+                              filled: true,
+                              fillColor: NordColors.nord0,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: NordColors.nord8,
+                              foregroundColor: NordColors.nord0,
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.person_add_alt_1, size: 18),
+                            label: const Text('Delen', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () async {
+                              final email = emailController.text.trim();
+                              if (email.isNotEmpty) {
+                                try {
+                                  await client.dio.post('/Project/$projectId/share', data: {'email': email});
+                                  emailController.clear();
+                                  setModalState(() {});
+                                  if (ctx.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Project succesvol gedeeld')),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (ctx.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Fout bij delen: $e'), backgroundColor: NordColors.nord11),
+                                    );
+                                  }
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    FutureBuilder<List<dynamic>>(
+                      future: fetchProjectMembers(),
+                      builder: (context, snapshot) {
+                        final members = snapshot.data ?? [];
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ACTIEVE DEELNEMERS (${members.length})',
+                              style: const TextStyle(color: NordColors.nord4, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 180),
+                              child: snapshot.connectionState == ConnectionState.waiting
+                                  ? const Center(child: CircularProgressIndicator(color: NordColors.nord8))
+                                  : members.isEmpty
+                                  ? Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: NordColors.nord0,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: NordColors.nord2),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Dit project is nog niet gedeeld met andere accounts.',
+                                    style: TextStyle(color: NordColors.nord4, fontSize: 13),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              )
+                                  : ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: members.length,
+                                itemBuilder: (context, index) {
+                                  final member = members[index];
+                                  final memberEmail = member['email'] ?? 'Onbekend';
+                                  final memberId = member['id']?.toString() ?? '';
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: NordColors.nord0,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: NordColors.nord2),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.person_outline, color: NordColors.nord8, size: 18),
+                                              const SizedBox(width: 8),
+                                              Flexible(
+                                                child: Text(
+                                                  memberEmail,
+                                                  style: const TextStyle(color: NordColors.nord6, fontSize: 13, fontWeight: FontWeight.w500),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        OutlinedButton.icon(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: NordColors.nord11,
+                                            side: BorderSide(color: NordColors.nord11.withValues(alpha: 0.6)),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                          ),
+                                          icon: const Icon(Icons.person_remove_outlined, size: 14),
+                                          label: const Text('Intrekken', style: TextStyle(fontSize: 12)),
+                                          onPressed: () async {
+                                            try {
+                                              await client.dio.delete('/Project/$projectId/share/$memberId');
+                                              setModalState(() {});
+                                              if (ctx.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Toegang ingetrokken')),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (ctx.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('Fout bij intrekken: $e'), backgroundColor: NordColors.nord11),
+                                                );
+                                              }
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: NordColors.nord2,
+                          foregroundColor: NordColors.nord6,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Sluiten'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -188,10 +550,10 @@ class ProjectsScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.home_outlined, color: NordColors.nord4),
-              title: const Text('Home', style: TextStyle(color: NordColors.nord4)),
+              title: const Text('Dashboard', style: TextStyle(color: NordColors.nord4)),
               onTap: () {
                 Navigator.of(context).pop();
-                Future.microtask(() => context.go('/home'));
+                context.go('/home');
               },
             ),
             ListTile(
@@ -203,21 +565,35 @@ class ProjectsScreen extends ConsumerWidget {
               onTap: () => Navigator.of(context).pop(),
             ),
             ListTile(
-              leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord4),
-              title: const Text('Budget & Financiën', style: TextStyle(color: NordColors.nord4)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              leading: const Icon(Icons.view_kanban_outlined, color: NordColors.nord4),
+              title: const Text('FlowBoards', style: TextStyle(color: NordColors.nord4)),
               onTap: () {
                 Navigator.of(context).pop();
-                Future.microtask(() => context.go('/budget'));
+                context.go('/flowboards');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.note_alt_outlined, color: NordColors.nord4),
+              title: const Text('Notities', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/notes');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord4),
+              title: const Text('Financiën', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/budget');
               },
             ),
             ListTile(
               leading: const Icon(Icons.widgets_outlined, color: NordColors.nord4),
-              title: const Text('Tools', style: TextStyle(color: NordColors.nord4)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              title: const Text('Utils', style: TextStyle(color: NordColors.nord4)),
               onTap: () {
                 Navigator.of(context).pop();
-                Future.microtask(() => context.go('/tools'));
+                context.go('/tools');
               },
             ),
             const Spacer(),
@@ -351,7 +727,7 @@ class ProjectsScreen extends ConsumerWidget {
                                   onPressed: () {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
-                                        builder: (_) => FlowboardScreen(project: project),
+                                        builder: (_) => FlowboardScreen(project: project, source: 'projects'),
                                       ),
                                     );
                                   },
@@ -381,24 +757,41 @@ class ProjectsScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: NordColors.nord11,
-                                side: BorderSide(color: NordColors.nord11.withValues(alpha: 0.4)),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: NordColors.nord8,
+                                    side: BorderSide(color: NordColors.nord8.withValues(alpha: 0.4)),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  icon: const Icon(Icons.share_outlined, size: 18),
+                                  label: const Text('Toegang & Delen'),
+                                  onPressed: () => _showShareDialog(context, ref, project.id, project.title),
+                                ),
                               ),
-                              icon: const Icon(Icons.delete_outline, size: 18),
-                              label: const Text('Project Verwijderen'),
-                              onPressed: () => _confirmDeleteProject(
-                                context,
-                                ref,
-                                project.id,
-                                project.title,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: NordColors.nord11,
+                                    side: BorderSide(color: NordColors.nord11.withValues(alpha: 0.4)),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  icon: const Icon(Icons.delete_outline, size: 18),
+                                  label: const Text('Verwijderen'),
+                                  onPressed: () => _confirmDeleteProject(
+                                    context,
+                                    ref,
+                                    project.id,
+                                    project.title,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ],
                       ),
@@ -437,7 +830,7 @@ class ProjectsScreen extends ConsumerWidget {
   }
 }
 
-// Dedicated Notes Overzichtsscherm inclusief Delete functionaliteit
+// Dedicated Notes Overzichtsscherm inclusief HCD delete dialoog
 class ProjectNotesScreen extends ConsumerWidget {
   final String projectId;
   final String projectTitle;
@@ -449,37 +842,84 @@ class ProjectNotesScreen extends ConsumerWidget {
   });
 
   void _confirmDeleteNote(BuildContext context, WidgetRef ref, String noteId, String noteTitle) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: NordColors.nord1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Notitie verwijderen', style: TextStyle(color: NordColors.nord6)),
-        content: Text(
-          'Weet je zeker dat je "$noteTitle" wilt verwijderen?',
-          style: const TextStyle(color: NordColors.nord4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annuleren', style: TextStyle(color: NordColors.nord4)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: NordColors.nord11,
-              foregroundColor: NordColors.nord6,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      isScrollControlled: true,
+      backgroundColor: NordColors.nord1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: NordColors.nord11, size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      'Notitie Verwijderen',
+                      style: TextStyle(
+                        color: NordColors.nord6,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: NordColors.nord4),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
             ),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await ref.read(projectActionsProvider.notifier).deleteNote(projectId, noteId);
-              // Forceer direct verversing
-              ref.invalidate(projectNotesProvider(projectId));
-              ref.invalidate(projectsProvider);
-            },
-            child: const Text('Verwijderen'),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              'Weet je zeker dat je "$noteTitle" wilt verwijderen?',
+              style: const TextStyle(color: NordColors.nord4, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: NordColors.nord2,
+                      foregroundColor: NordColors.nord6,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Annuleren'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: NordColors.nord11,
+                      foregroundColor: NordColors.nord6,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      await ref.read(projectActionsProvider.notifier).deleteNote(projectId, noteId);
+                      ref.invalidate(projectNotesProvider(projectId));
+                      ref.invalidate(projectsProvider);
+                    },
+                    child: const Text('Verwijderen', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -492,6 +932,10 @@ class ProjectNotesScreen extends ConsumerWidget {
       backgroundColor: NordColors.nord0,
       appBar: AppBar(
         backgroundColor: NordColors.nord1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: NordColors.nord6),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text('Notities: $projectTitle', style: const TextStyle(color: NordColors.nord6, fontSize: 18)),
         iconTheme: const IconThemeData(color: NordColors.nord6),
         actions: [

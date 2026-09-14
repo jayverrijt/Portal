@@ -78,7 +78,7 @@ class ToolsScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.home_outlined, color: NordColors.nord4),
-              title: const Text('Home', style: TextStyle(color: NordColors.nord4)),
+              title: const Text('Dashboard', style: TextStyle(color: NordColors.nord4)),
               onTap: () {
                 Navigator.of(context).pop();
                 context.go('/home');
@@ -93,8 +93,24 @@ class ToolsScreen extends ConsumerWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.view_kanban_outlined, color: NordColors.nord4),
+              title: const Text('FlowBoards', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/flowboards');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.note_alt_outlined, color: NordColors.nord4),
+              title: const Text('Notities', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/notes');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord4),
-              title: const Text('Budget & Financiën', style: TextStyle(color: NordColors.nord4)),
+              title: const Text('Financiën', style: TextStyle(color: NordColors.nord4)),
               onTap: () {
                 Navigator.of(context).pop();
                 context.go('/budget');
@@ -102,7 +118,7 @@ class ToolsScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.widgets_outlined, color: NordColors.nord8),
-              title: const Text('Tools', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.w600)),
+              title: const Text('Utils', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.w600)),
               selected: true,
               selectedTileColor: NordColors.nord2.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
