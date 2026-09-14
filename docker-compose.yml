@@ -12,6 +12,7 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - portal-internal
+
   portal-api:
     build:
       context: .
@@ -22,13 +23,14 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Server=portal-db;Database=portal;User=portal_user;Password=portal_db_password;
       - Jwt__Key=SuperSecretPortalJwtSigningKey2026!WithSufficientLength
-      - Jwt__Issuer=https://api.portal.jayverrijt.nl
+      - Jwt__Issuer=https://portalapi.jayverrijt.nl
       - Jwt__Audience=https://portal.jayverrijt.nl
     ports:
       - "5190:8080"
     networks:
       - portal-internal
       - proxy-web
+
   portal-web:
     build:
       context: .
@@ -45,6 +47,7 @@ services:
     networks:
       - portal-internal
       - proxy-web
+
 volumes:
   mysql_data:
 

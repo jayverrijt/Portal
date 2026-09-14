@@ -3,11 +3,9 @@ name: CI/CD Pipeline - Portal
 on:
   push:
     branches:
-      - main
       - docker
   pull_request:
     branches:
-      - main
       - docker
 
 jobs:
