@@ -18,8 +18,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose;
-    _passwordController.dispose;
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -48,7 +48,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.hub_outlined, size: 64, color: NordColors.nord8),
+                  Center(
+                    child: Container(
+                      width: 68,
+                      height: 68,
+                      decoration: const BoxDecoration(
+                        color: NordColors.nord1,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.bolt,
+                          color: NordColors.nord13,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Portal',
@@ -61,7 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Log in om toegang te krijgen tot je taken en notities',
+                    'Log in om door te gaan',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: NordColors.nord4, fontSize: 14),
                   ),

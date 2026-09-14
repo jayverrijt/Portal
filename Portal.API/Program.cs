@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -22,17 +23,25 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 2. DATABASE CONFIGURATIE
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+// 2. FORWARDED HEADERS (voor Nginx Proxy Manager / Reverse Proxy)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// 3. DATABASE CONFIGURATIE
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<PortalDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// 3. REPOSITORY & UNIT OF WORK REGISTRATIE
+// 4. REPOSITORY & UNIT OF WORK REGISTRATIE
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// 4. ASP.NET CORE IDENTITY
+// 5. ASP.NET CORE IDENTITY
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -48,7 +57,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddSignInManager()
 .AddDefaultTokenProviders();
 
-// 5. JWT AUTHENTICATION CONFIGURATIE
+// 6. JWT AUTHENTICATION CONFIGURATIE
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretPortalJwtSigningKey2026!WithSufficientLength";
 if (jwtKey.Length < 32)
 {
@@ -81,7 +90,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// 6. CONTROLLERS & SWAGGER
+// 7. CONTROLLERS & SWAGGER
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -114,7 +123,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 7. DATABASE MIGRATIE & SEEDING
+// 8. DATABASE MIGRATIE & SEEDING
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -150,7 +159,7 @@ using (var scope = app.Services.CreateScope())
                 }
                 else
                 {
-                    logger.LogWarning("Kon default gebruiker niet aanmaken: {Errors}", 
+                    logger.LogWarning("Kon default gebruiker niet aanmaken: {Errors}",
                         string.Join(", ", createResult.Errors.Select(e => e.Description)));
                 }
             }
@@ -171,14 +180,34 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// 8. HTTP PIPELINE
+// 9. HTTP PIPELINE (VOLGORDE IS CRUCIAAL)
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
+
+// CORS MOET direct na UseRouting en vóór Authentication/Authorization
 app.UseCors("AllowAll");
+
+// Vang eventuele preflight OPTIONS requests direct af met status 204
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
+        context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+        context.Response.StatusCode = StatusCodes.Status204NoContent;
+        await context.Response.CompleteAsync();
+        return;
+    }
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/nord_theme.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../budget/screens/budget_screen.dart';
 import '../providers/project_provider.dart';
 import 'flowboard_screen.dart';
 import 'note_editor_screen.dart';
@@ -25,18 +26,24 @@ class ProjectsScreen extends ConsumerWidget {
           children: [
             TextField(
               controller: titleController,
+              autofocus: true,
               style: const TextStyle(color: NordColors.nord6),
               decoration: const InputDecoration(
                 labelText: 'Titel',
                 labelStyle: TextStyle(color: NordColors.nord4),
+                filled: true,
+                fillColor: NordColors.nord2,
               ),
             ),
+            const SizedBox(height: 12),
             TextField(
               controller: descController,
               style: const TextStyle(color: NordColors.nord6),
               decoration: const InputDecoration(
                 labelText: 'Beschrijving (optioneel)',
                 labelStyle: TextStyle(color: NordColors.nord4),
+                filled: true,
+                fillColor: NordColors.nord2,
               ),
             ),
           ],
@@ -47,7 +54,10 @@ class ProjectsScreen extends ConsumerWidget {
             child: const Text('Annuleren', style: TextStyle(color: NordColors.nord4)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: NordColors.nord8),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: NordColors.nord8,
+              foregroundColor: NordColors.nord0,
+            ),
             onPressed: () async {
               final title = titleController.text.trim();
               if (title.isNotEmpty) {
@@ -57,7 +67,38 @@ class ProjectsScreen extends ConsumerWidget {
                 if (ctx.mounted) Navigator.of(ctx).pop();
               }
             },
-            child: const Text('Aanmaken', style: TextStyle(color: NordColors.nord0)),
+            child: const Text('Aanmaken'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteProject(BuildContext context, WidgetRef ref, String projectId, String title) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NordColors.nord1,
+        title: const Text('Project verwijderen', style: TextStyle(color: NordColors.nord6)),
+        content: Text(
+          'Weet je zeker dat je "$title" wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+          style: const TextStyle(color: NordColors.nord4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Annuleren', style: TextStyle(color: NordColors.nord4)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: NordColors.nord11,
+              foregroundColor: NordColors.nord6,
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(projectActionsProvider.notifier).deleteProject(projectId);
+            },
+            child: const Text('Verwijderen'),
           ),
         ],
       ),
@@ -70,23 +111,95 @@ class ProjectsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.dashboard_outlined, color: NordColors.nord8, size: 22),
-            SizedBox(width: 8),
-            Text('Portal Projecten'),
-          ],
-        ),
+        title: const Text('Portal Projecten'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: NordColors.nord4),
+            tooltip: 'Vernieuwen',
             onPressed: () => ref.refresh(projectsProvider),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: NordColors.nord11),
-            onPressed: () => ref.read(authNotifierProvider.notifier).logout(),
-          ),
         ],
+      ),
+      drawer: Drawer(
+        backgroundColor: NordColors.nord1,
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                color: NordColors.nord0,
+                border: Border(bottom: BorderSide(color: NordColors.nord2)),
+              ),
+              child: Container(
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: const BoxDecoration(
+                            color: NordColors.nord1,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.bolt,
+                            color: NordColors.nord13,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Portal',
+                          style: TextStyle(
+                            color: NordColors.nord6,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Project & Finance Suite',
+                      style: TextStyle(color: NordColors.nord4, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_outlined, color: NordColors.nord8),
+              title: const Text('Projecten', style: TextStyle(color: NordColors.nord6)),
+              selected: true,
+              selectedTileColor: NordColors.nord2,
+              onTap: () => Navigator.of(context).pop(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord4),
+              title: const Text('Budget & Financiën', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const BudgetScreen()),
+                );
+              },
+            ),
+            const Spacer(),
+            const Divider(color: NordColors.nord2),
+            ListTile(
+              leading: const Icon(Icons.logout, color: NordColors.nord11),
+              title: const Text('Uitloggen', style: TextStyle(color: NordColors.nord11)),
+              onTap: () {
+                Navigator.of(context).pop();
+                ref.read(authNotifierProvider.notifier).logout();
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: NordColors.nord8,
@@ -117,6 +230,7 @@ class ProjectsScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final project = projects[index];
               return Card(
+                color: NordColors.nord1,
                 child: ExpansionTile(
                   leading: const Icon(Icons.folder_outlined, color: NordColors.nord8),
                   title: Text(
@@ -179,9 +293,12 @@ class ProjectsScreen extends ConsumerWidget {
                               size: 20,
                               color: NordColors.nord11,
                             ),
-                            onPressed: () => ref
-                                .read(projectActionsProvider.notifier)
-                                .deleteProject(project.id),
+                            onPressed: () => _confirmDeleteProject(
+                              context,
+                              ref,
+                              project.id,
+                              project.title,
+                            ),
                           ),
                         ],
                       ),
