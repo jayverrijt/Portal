@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/nord_theme.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../budget/screens/budget_screen.dart';
 import '../providers/project_provider.dart';
 import 'flowboard_screen.dart';
 import 'note_editor_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class ProjectsScreen extends ConsumerWidget {
   const ProjectsScreen({super.key});
@@ -20,6 +20,7 @@ class ProjectsScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: NordColors.nord1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Nieuw Project', style: TextStyle(color: NordColors.nord6)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -28,22 +29,30 @@ class ProjectsScreen extends ConsumerWidget {
               controller: titleController,
               autofocus: true,
               style: const TextStyle(color: NordColors.nord6),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Titel',
-                labelStyle: TextStyle(color: NordColors.nord4),
+                labelStyle: const TextStyle(color: NordColors.nord4),
                 filled: true,
-                fillColor: NordColors.nord2,
+                fillColor: NordColors.nord0,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: descController,
               style: const TextStyle(color: NordColors.nord6),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Beschrijving (optioneel)',
-                labelStyle: TextStyle(color: NordColors.nord4),
+                labelStyle: const TextStyle(color: NordColors.nord4),
                 filled: true,
-                fillColor: NordColors.nord2,
+                fillColor: NordColors.nord0,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ],
@@ -57,6 +66,7 @@ class ProjectsScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: NordColors.nord8,
               foregroundColor: NordColors.nord0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
               final title = titleController.text.trim();
@@ -79,6 +89,7 @@ class ProjectsScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: NordColors.nord1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Project verwijderen', style: TextStyle(color: NordColors.nord6)),
         content: Text(
           'Weet je zeker dat je "$title" wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
@@ -93,6 +104,7 @@ class ProjectsScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: NordColors.nord11,
               foregroundColor: NordColors.nord6,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
               Navigator.of(ctx).pop();
@@ -110,8 +122,11 @@ class ProjectsScreen extends ConsumerWidget {
     final projectsAsync = ref.watch(projectsProvider);
 
     return Scaffold(
+      backgroundColor: NordColors.nord0,
       appBar: AppBar(
-        title: const Text('Portal Projecten'),
+        backgroundColor: NordColors.nord1,
+        title: const Text('Projecten', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.bold)),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: NordColors.nord4),
@@ -140,9 +155,10 @@ class ProjectsScreen extends ConsumerWidget {
                         Container(
                           width: 38,
                           height: 38,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: NordColors.nord1,
                             shape: BoxShape.circle,
+                            border: Border.all(color: NordColors.nord2),
                           ),
                           child: const Icon(
                             Icons.bolt,
@@ -163,7 +179,7 @@ class ProjectsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Project & Finance Suite',
+                      'Productivity Suite',
                       style: TextStyle(color: NordColors.nord4, fontSize: 12),
                     ),
                   ],
@@ -171,31 +187,52 @@ class ProjectsScreen extends ConsumerWidget {
               ),
             ),
             ListTile(
+              leading: const Icon(Icons.home_outlined, color: NordColors.nord4),
+              title: const Text('Home', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/home');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.folder_outlined, color: NordColors.nord8),
-              title: const Text('Projecten', style: TextStyle(color: NordColors.nord6)),
+              title: const Text('Projecten', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.w600)),
               selected: true,
-              selectedTileColor: NordColors.nord2,
+              selectedTileColor: NordColors.nord2.withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               onTap: () => Navigator.of(context).pop(),
             ),
             ListTile(
               leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord4),
               title: const Text('Budget & Financiën', style: TextStyle(color: NordColors.nord4)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BudgetScreen()),
-                );
+                context.go('/budget');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.widgets_outlined, color: NordColors.nord4),
+              title: const Text('Tools', style: TextStyle(color: NordColors.nord4)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/tools');
               },
             ),
             const Spacer(),
             const Divider(color: NordColors.nord2),
-            ListTile(
-              leading: const Icon(Icons.logout, color: NordColors.nord11),
-              title: const Text('Uitloggen', style: TextStyle(color: NordColors.nord11)),
-              onTap: () {
-                Navigator.of(context).pop();
-                ref.read(authNotifierProvider.notifier).logout();
-              },
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: NordColors.nord11),
+                title: const Text('Uitloggen', style: TextStyle(color: NordColors.nord11)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  ref.read(authNotifierProvider.notifier).logout();
+                },
+              ),
             ),
             const SizedBox(height: 12),
           ],
@@ -216,174 +253,379 @@ class ProjectsScreen extends ConsumerWidget {
         ),
         data: (projects) {
           if (projects.isEmpty) {
-            return const Center(
-              child: Text(
-                'Geen projecten gevonden.',
-                style: TextStyle(color: NordColors.nord3),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.folder_off_outlined, size: 64, color: NordColors.nord3),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Geen projecten gevonden.',
+                    style: TextStyle(color: NordColors.nord4, fontSize: 16),
+                  ),
+                ],
               ),
             );
           }
-          return ListView.separated(
+
+          return ListView(
             padding: const EdgeInsets.all(16),
-            itemCount: projects.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final project = projects[index];
-              return Card(
-                color: NordColors.nord1,
+            children: [
+              // Dashboard Header Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: NordColors.nord1,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: NordColors.nord2),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem('Actieve Projecten', '${projects.length}', Icons.folder_special, NordColors.nord8),
+                    Container(height: 30, width: 1, color: NordColors.nord2),
+                    _buildStatItem('Totaal Notities', '${projects.fold(0, (sum, p) => sum + p.notes.length)}', Icons.note_alt, NordColors.nord14),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Project Cards List
+              ...projects.map((project) => Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: NordColors.nord1,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: NordColors.nord2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: ExpansionTile(
-                  leading: const Icon(Icons.folder_outlined, color: NordColors.nord8),
+                  collapsedIconColor: NordColors.nord4,
+                  iconColor: NordColors.nord8,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: NordColors.nord8.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.folder, color: NordColors.nord8),
+                  ),
                   title: Text(
                     project.title,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: NordColors.nord6,
+                      fontSize: 16,
                     ),
                   ),
-                  subtitle: Text(
-                    '${project.notes.length} notities • ${project.cards.length} taken • ${DateFormat('dd MMM yyyy').format(project.createdAt)}',
-                    style: const TextStyle(color: NordColors.nord4, fontSize: 12),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '${project.notes.length} notities • ${project.cards.length} taken • ${DateFormat('dd MMM yyyy').format(project.createdAt)}',
+                      style: const TextStyle(color: NordColors.nord4, fontSize: 12),
+                    ),
                   ),
                   children: [
+                    // Grotere, prominentere actieknoppen
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: Row(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
                         children: [
-                          OutlinedButton.icon(
-                            icon: const Icon(
-                              Icons.view_kanban_outlined,
-                              size: 16,
-                              color: NordColors.nord8,
-                            ),
-                            label: const Text(
-                              'FlowBoard',
-                              style: TextStyle(color: NordColors.nord8),
-                            ),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => FlowboardScreen(project: project),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: NordColors.nord8.withValues(alpha: 0.2),
+                                    foregroundColor: NordColors.nord8,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  icon: const Icon(Icons.view_kanban_outlined, size: 20),
+                                  label: const Text('FlowBoard', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => FlowboardScreen(project: project),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          OutlinedButton.icon(
-                            icon: const Icon(
-                              Icons.note_add_outlined,
-                              size: 16,
-                              color: NordColors.nord14,
-                            ),
-                            label: const Text(
-                              'Notitie',
-                              style: TextStyle(color: NordColors.nord14),
-                            ),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => NoteEditorScreen(projectId: project.id),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: NordColors.nord14.withValues(alpha: 0.2),
+                                    foregroundColor: NordColors.nord14,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  icon: const Icon(Icons.notes_rounded, size: 20),
+                                  label: Text('Notities (${project.notes.length})', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ProjectNotesScreen(project: project),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
+                              ),
+                            ],
                           ),
-                          const Spacer(),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              size: 20,
-                              color: NordColors.nord11,
-                            ),
-                            onPressed: () => _confirmDeleteProject(
-                              context,
-                              ref,
-                              project.id,
-                              project.title,
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: NordColors.nord11,
+                                side: BorderSide(color: NordColors.nord11.withValues(alpha: 0.4)),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.delete_outline, size: 18),
+                              label: const Text('Project Verwijderen'),
+                              onPressed: () => _confirmDeleteProject(
+                                context,
+                                ref,
+                                project.id,
+                                project.title,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const Divider(color: NordColors.nord2),
+                    const Divider(color: NordColors.nord2, height: 24),
+
+                    // Compacte Preview van max 2 notities
                     if (project.notes.isEmpty)
                       const Padding(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.fromLTRB(16, 0, 16, 20),
                         child: Text(
                           'Geen documentatie voor dit project.',
                           style: TextStyle(
                             color: NordColors.nord3,
                             fontStyle: FontStyle.italic,
+                            fontSize: 13,
                           ),
                         ),
                       )
                     else
-                      ...project.notes.map((note) => Container(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: NordColors.nord0,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: NordColors.nord2),
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    note.title,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: NordColors.nord8,
-                                      fontSize: 13,
+                            const Text(
+                              'Recente Notities (Preview)',
+                              style: TextStyle(color: NordColors.nord4, fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            ...project.notes.take(2).map((note) => Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: NordColors.nord0,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: NordColors.nord2),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.note, size: 16, color: NordColors.nord8),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      note.title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: NordColors.nord6,
+                                        fontSize: 13,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    size: 16,
-                                    color: NordColors.nord4,
-                                  ),
+                                  const Icon(Icons.chevron_right, size: 16, color: NordColors.nord3),
+                                ],
+                              ),
+                            )),
+                            if (project.notes.length > 2)
+                              Center(
+                                child: TextButton(
                                   onPressed: () {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
-                                        builder: (_) => NoteEditorScreen(
-                                          projectId: project.id,
-                                          initialNote: note,
-                                        ),
+                                        builder: (_) => ProjectNotesScreen(project: project),
                                       ),
                                     );
                                   },
-                                ),
-                              ],
-                            ),
-                            const Divider(color: NordColors.nord2, height: 12),
-                            MarkdownBody(
-                              data: note.content,
-                              styleSheet: MarkdownStyleSheet(
-                                p: const TextStyle(
-                                  color: NordColors.nord5,
-                                  fontSize: 12,
-                                ),
-                                code: const TextStyle(
-                                  color: NordColors.nord7,
-                                  backgroundColor: NordColors.nord1,
+                                  child: Text(
+                                    'Bekijk alle ${project.notes.length} notities...',
+                                    style: const TextStyle(color: NordColors.nord8, fontSize: 12),
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
-                      )),
-                    const SizedBox(height: 12),
+                      ),
                   ],
+                ),
+              )),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(label, style: const TextStyle(color: NordColors.nord4, fontSize: 11)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// Dedicated Notes Overzichtsscherm per Project
+class ProjectNotesScreen extends StatelessWidget {
+  final dynamic project;
+
+  const ProjectNotesScreen({super.key, required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: NordColors.nord0,
+      appBar: AppBar(
+        backgroundColor: NordColors.nord1,
+        title: Text('Notities: ${project.title}', style: const TextStyle(color: NordColors.nord6, fontSize: 18)),
+        iconTheme: const IconThemeData(color: NordColors.nord6),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add, color: NordColors.nord8),
+            tooltip: 'Nieuwe Notitie',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => NoteEditorScreen(projectId: project.id),
                 ),
               );
             },
+          ),
+        ],
+      ),
+      body: project.notes.isEmpty
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.note_alt_outlined, size: 64, color: NordColors.nord3),
+            const SizedBox(height: 16),
+            const Text(
+              'Geen notities voor dit project.',
+              style: TextStyle(color: NordColors.nord4, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: NordColors.nord8,
+                foregroundColor: NordColors.nord0,
+              ),
+              icon: const Icon(Icons.add),
+              label: const Text('Eerste notitie maken'),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => NoteEditorScreen(projectId: project.id),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      )
+          : ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: project.notes.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final note = project.notes[index];
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: NordColors.nord1,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: NordColors.nord2),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        note.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: NordColors.nord8,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: NordColors.nord4, size: 20),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => NoteEditorScreen(
+                              projectId: project.id,
+                              initialNote: note,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const Divider(color: NordColors.nord2, height: 16),
+                MarkdownBody(
+                  data: note.content,
+                  styleSheet: MarkdownStyleSheet(
+                    p: const TextStyle(color: NordColors.nord5, fontSize: 13),
+                    code: const TextStyle(color: NordColors.nord7, backgroundColor: NordColors.nord0),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/nord_theme.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/budget_models.dart';
 import '../providers/budget_provider.dart';
 
@@ -12,20 +14,125 @@ class BudgetScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(budgetOverviewProvider);
 
     return Scaffold(
+      backgroundColor: NordColors.nord0,
       appBar: AppBar(
+        backgroundColor: NordColors.nord1,
         title: const Row(
           children: [
             Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord8, size: 22),
             SizedBox(width: 8),
-            Text('Budget & Financiën'),
+            Text('Budget & Financiën', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.bold)),
           ],
         ),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: NordColors.nord4),
             onPressed: () => ref.refresh(budgetOverviewProvider),
           ),
         ],
+      ),
+      drawer: Drawer(
+        backgroundColor: NordColors.nord1,
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                color: NordColors.nord0,
+                border: Border(bottom: BorderSide(color: NordColors.nord2)),
+              ),
+              child: Container(
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: NordColors.nord1,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: NordColors.nord2),
+                          ),
+                          child: const Icon(
+                            Icons.bolt,
+                            color: NordColors.nord13,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Portal',
+                          style: TextStyle(
+                            color: NordColors.nord6,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Productivity Suite',
+                      style: TextStyle(color: NordColors.nord4, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home_outlined, color: NordColors.nord4),
+              title: const Text('Home', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/home');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_outlined, color: NordColors.nord4),
+              title: const Text('Projecten', style: TextStyle(color: NordColors.nord4)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/projects');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord8),
+              title: const Text('Budget & Financiën', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.w600)),
+              selected: true,
+              selectedTileColor: NordColors.nord2.withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              onTap: () => Navigator.of(context).pop(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.widgets_outlined, color: NordColors.nord4),
+              title: const Text('Tools', style: TextStyle(color: NordColors.nord4)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/tools');
+              },
+            ),
+            const Spacer(),
+            const Divider(color: NordColors.nord2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: NordColors.nord11),
+                title: const Text('Uitloggen', style: TextStyle(color: NordColors.nord11)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  ref.read(authNotifierProvider.notifier).logout();
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
       body: overviewAsync.when(
         loading: () => const Center(
