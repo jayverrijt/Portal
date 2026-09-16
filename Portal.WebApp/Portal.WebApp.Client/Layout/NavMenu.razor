@@ -3,16 +3,28 @@
 @inject Portal.WebApp.Client.Services.CustomAuthStateProvider AuthState
 
 <div class="d-flex flex-column h-100 p-3 bg-nord-dark border-end border-nord">
-    <!-- BRAND / HEADER -->
+    <!-- BRAND / HEADER / USER PROFILE -->
     <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-nord">
-        <a href="" class="d-flex align-items-center text-decoration-none text-nord-snow gap-2">
-            <span class="fs-4 text-nord-yellow">⚡</span>
+        <a href="" class="d-flex align-items-center text-decoration-none text-nord-snow gap-2 overflow-hidden">
+            @if (UserProfile != null && !string.IsNullOrEmpty(UserProfile.ProfilePictureUrl))
+            {
+                <img src="@UserProfile.ProfilePictureUrl" alt="Avatar" class="rounded-circle flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;" />
+            }
+            else
+            {
+                <span class="fs-4 text-nord-yellow flex-shrink-0">
+                    <i class="fa-solid fa-circle-user"></i>
+                </span>
+            }
+
             @if (!IsCollapsed)
             {
-                <span class="fs-5 fw-bold tracking-wide">Portal</span>
+                <span class="fs-6 fw-bold tracking-wide text-truncate">
+                    @(!string.IsNullOrEmpty(UserProfile?.FullName) ? UserProfile.FullName : "Portal")
+                </span>
             }
         </a>
-        <button type="button" class="btn btn-sm btn-outline-secondary p-1 border-0 text-nord-dim" @onclick="Toggle">
+        <button type="button" class="btn btn-sm btn-outline-secondary p-1 border-0 text-nord-dim flex-shrink-0" @onclick="Toggle">
             <i class="fa-solid @(IsCollapsed ? "fa-angles-right" : "fa-angles-left")"></i>
         </button>
     </div>
@@ -48,6 +60,12 @@
             <i class="fa-solid fa-toolbox fa-fw"></i>
             @if (!IsCollapsed) { <span>Utils</span> }
         </NavLink>
+
+        <!-- INSTELLINGEN LINK -->
+        <NavLink class="nav-link d-flex align-items-center gap-3 text-nord-dim rounded-2 px-3 py-2 mt-2 border-top border-nord pt-3" href="settings">
+            <i class="fa-solid fa-gear fa-fw"></i>
+            @if (!IsCollapsed) { <span>Instellingen</span> }
+        </NavLink>
     </nav>
 
     <!-- FOOTER / LOGOUT -->
@@ -62,6 +80,7 @@
 @code {
     [Parameter] public bool IsCollapsed { get; set; }
     [Parameter] public EventCallback<bool> OnToggleSidebar { get; set; }
+    [Parameter] public Portal.WebApp.Client.Services.UserProfileDto? UserProfile { get; set; }
 
     private async Task Toggle()
     {

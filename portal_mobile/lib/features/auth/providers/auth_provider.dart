@@ -89,6 +89,13 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Handig om direct een vernieuwd token op te slaan na het updaten van profiel/instellingen,
+  /// zodat de UI (zoals de sidebar/profielfoto) direct ververst zonder herinloggen.
+  Future<void> updateToken(String newToken) async {
+    await _apiClient.saveToken(newToken);
+    state = state.copyWith(status: AuthStatus.authenticated);
+  }
+
   Future<void> logout() async {
     await _apiClient.clearToken();
     state = state.copyWith(status: AuthStatus.unauthenticated);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/theme/nord_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../projects/providers/project_provider.dart';
@@ -12,6 +13,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projectsAsync = ref.watch(projectsProvider);
+    final apiClient = ref.read(apiClientProvider);
 
     return Scaffold(
       backgroundColor: NordColors.nord0,
@@ -25,125 +27,155 @@ class HomeScreen extends ConsumerWidget {
       ),
       drawer: Drawer(
         backgroundColor: NordColors.nord1,
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                color: NordColors.nord0,
-                border: Border(bottom: BorderSide(color: NordColors.nord2)),
-              ),
-              child: Container(
-                alignment: Alignment.bottomLeft,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+        child: FutureBuilder<Response>(
+          future: apiClient.dio.get('/UserSettings'),
+          builder: (context, snapshot) {
+            String displayName = 'Portal Gebruiker';
+            String? profilePictureUrl;
+
+            if (snapshot.hasData && snapshot.data?.data != null) {
+              final data = snapshot.data!.data;
+              displayName = data['fullName'] ?? 'Portal Gebruiker';
+              if (displayName.trim().isEmpty) displayName = 'Portal Gebruiker';
+              profilePictureUrl = data['profilePictureUrl'];
+            }
+
+            return Column(
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    color: NordColors.nord0,
+                    border: Border(bottom: BorderSide(color: NordColors.nord2)),
+                  ),
+                  child: Container(
+                    alignment: Alignment.bottomLeft,
+                    child: Row(
                       children: [
                         Container(
-                          width: 38,
-                          height: 38,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
-                            color: NordColors.nord1,
                             shape: BoxShape.circle,
-                            border: Border.all(color: NordColors.nord2),
+                            border: Border.all(color: NordColors.nord8, width: 1.5),
+                            color: NordColors.nord1,
                           ),
-                          child: const Icon(
-                            Icons.bolt,
-                            color: NordColors.nord13,
-                            size: 24,
+                          child: ClipOval(
+                            child: profilePictureUrl != null && profilePictureUrl.isNotEmpty
+                                ? Image.network(
+                              profilePictureUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.person,
+                                size: 24,
+                                color: NordColors.nord4,
+                              ),
+                            )
+                                : const Icon(
+                              Icons.person,
+                              size: 24,
+                              color: NordColors.nord4,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        const Text(
-                          'Portal',
-                          style: TextStyle(
-                            color: NordColors.nord6,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            displayName,
+                            style: const TextStyle(
+                              color: NordColors.nord6,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Productivity Suite',
-                      style: TextStyle(color: NordColors.nord4, fontSize: 12),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home_outlined, color: NordColors.nord4),
-              title: const Text('Dashboard', style: TextStyle(color: NordColors.nord4)),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.go('/home');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder_outlined, color: NordColors.nord4),
-              title: const Text('Projecten', style: TextStyle(color: NordColors.nord4)),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.go('/projects');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.view_kanban_outlined, color: NordColors.nord4),
-              title: const Text('FlowBoards', style: TextStyle(color: NordColors.nord4)),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.go('/flowboards');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.note_alt_outlined, color: NordColors.nord4),
-              title: const Text('Notities', style: TextStyle(color: NordColors.nord4)),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.go('/notes');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord4),
-              title: const Text('Financiën', style: TextStyle(color: NordColors.nord4)),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.go('/budget');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.widgets_outlined, color: NordColors.nord4),
-              title: const Text('Utils', style: TextStyle(color: NordColors.nord4)),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.go('/tools');
-              },
-            ),
-            const Spacer(),
-            const Divider(color: NordColors.nord2),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: ListTile(
-                leading: const Icon(Icons.logout, color: NordColors.nord11),
-                title: const Text('Uitloggen', style: TextStyle(color: NordColors.nord11)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  ref.read(authNotifierProvider.notifier).logout();
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
+                ListTile(
+                  leading: const Icon(Icons.home_outlined, color: NordColors.nord8),
+                  title: const Text('Dashboard', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.w600)),
+                  selected: true,
+                  selectedTileColor: NordColors.nord2.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.folder_outlined, color: NordColors.nord4),
+                  title: const Text('Projecten', style: TextStyle(color: NordColors.nord4)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    context.go('/projects');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.view_kanban_outlined, color: NordColors.nord4),
+                  title: const Text('FlowBoards', style: TextStyle(color: NordColors.nord4)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    context.go('/flowboards');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.note_alt_outlined, color: NordColors.nord4),
+                  title: const Text('Notities', style: TextStyle(color: NordColors.nord4)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    context.go('/notes');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.account_balance_wallet_outlined, color: NordColors.nord4),
+                  title: const Text('Financiën', style: TextStyle(color: NordColors.nord4)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    context.go('/budget');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.widgets_outlined, color: NordColors.nord4),
+                  title: const Text('Utils', style: TextStyle(color: NordColors.nord4)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    context.go('/tools');
+                  },
+                ),
+                const Spacer(),
+                const Divider(color: NordColors.nord2),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: ListTile(
+                    leading: const Icon(Icons.settings_outlined, color: NordColors.nord4),
+                    title: const Text('Instellingen', style: TextStyle(color: NordColors.nord4)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.go('/settings');
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: ListTile(
+                    leading: const Icon(Icons.logout, color: NordColors.nord11),
+                    title: const Text('Uitloggen', style: TextStyle(color: NordColors.nord11)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      ref.read(authNotifierProvider.notifier).logout();
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            );
+          },
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Weer Widget (Helmond, Netherlands)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -190,8 +222,6 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Quick Stats Grid / Summary
           projectsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator(color: NordColors.nord8)),
             error: (_, __) => const SizedBox.shrink(),
@@ -250,8 +280,6 @@ class HomeScreen extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 24),
-
-          // Snelle Snelkoppelingen naar Tools / Gewicht
           const Text(
             'Snelle Acties',
             style: TextStyle(color: NordColors.nord6, fontSize: 16, fontWeight: FontWeight.bold),

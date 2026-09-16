@@ -31,6 +31,17 @@
         <DataAnnotationsValidator />
 
         <div class="mb-3">
+            <label class="form-label text-nord-snow small fw-semibold">Volledige Naam</label>
+            <div class="input-group">
+                <span class="input-group-text bg-nord-surface border-nord text-nord-dim">
+                    <i class="fa-solid fa-id-card"></i>
+                </span>
+                <InputText class="form-control" placeholder="Bijv. Jay Verrijt" @bind-Value="_registerModel.FullName" />
+            </div>
+            <ValidationMessage For="() => _registerModel.FullName" class="text-danger small mt-1" />
+        </div>
+
+        <div class="mb-3">
             <label class="form-label text-nord-snow small fw-semibold">Gebruikersnaam</label>
             <div class="input-group">
                 <span class="input-group-text bg-nord-surface border-nord text-nord-dim">
@@ -111,7 +122,6 @@
                 }
                 else
                 {
-                    // Fallback als token leeg is: doorsturen naar login
                     Navigation.NavigateTo("/login", forceLoad: false);
                 }
             }
@@ -131,6 +141,9 @@
 
     public class RegisterFormModel
     {
+        [Required(ErrorMessage = "Volledige naam is verplicht.")]
+        public string FullName { get; set; } = string.Empty;
+
         [Required(ErrorMessage = "Gebruikersnaam is verplicht.")]
         public string UserName { get; set; } = string.Empty;
 

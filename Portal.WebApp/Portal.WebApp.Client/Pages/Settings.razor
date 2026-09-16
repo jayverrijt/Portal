@@ -1,0 +1,173 @@
+@page "/settings"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject Portal.WebApp.Client.Services.UserService UserService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Instellingen - Portal</PageTitle>
+
+<div class="container mt-4" style="max-width: 600px;">
+    <h3 class="mb-4 text-light fw-bold">Instellingen</h3>
+
+    @if (_loading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-info" role="status"></div>
+        </div>
+    }
+    else
+    {
+        <!-- Profiel Sectie -->
+        <div class="card bg-dark border-secondary p-4 mb-4 shadow-sm rounded-4">
+            <h5 class="text-info fw-bold mb-3">Profielgegevens</h5>
+
+            <!-- Avatar / Profielfoto Sectie -->
+            <div class="text-center mb-4">
+                <div class="d-inline-block position-relative">
+                    @if (!string.IsNullOrEmpty(_profile.ProfilePictureUrl))
+                    {
+                        <img src="@_profile.ProfilePictureUrl" alt="Profielfoto" class="rounded-circle shadow border border-secondary" style="width: 90px; height: 90px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-black border border-secondary d-flex align-items-center justify-content-center shadow mx-auto" style="width: 90px; height: 90px;">
+                            <i class="fa-solid fa-user text-secondary fs-3"></i>
+                        </div>
+                    }
+                </div>
+                <div class="text-muted small mt-2">Huidige profielfoto</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted">E-mailadres</label>
+                <input type="text" class="form-control bg-black text-light border-secondary" value="@_profile.Email" disabled />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted">Volledige Naam</label>
+                <input type="text" class="form-control bg-black text-light border-secondary" @bind="_profile.FullName" placeholder="Bijv. Jay Verrijt" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted">Profielfoto Uploaden</label>
+                <InputFile OnChange="HandleFileSelected" class="form-control bg-black text-light border-secondary" accept=".jpg, .jpeg, .png" />
+                @if (_uploading)
+                {
+                    <div class="text-info small mt-1">Bezig met uploaden...</div>
+                }
+            </div>
+        </div>
+
+        <!-- Notificaties Sectie -->
+        <div class="card bg-dark border-secondary p-4 mb-4 shadow-sm rounded-4">
+            <h5 class="text-info fw-bold mb-3">Notificaties (Binnenkort)</h5>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="notifSwitch" @bind="_notificationsEnabled">
+                <label class="form-check-label text-light" for="notifSwitch">Ontvang updates over projecten en taken</label>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert @(_isSuccess ? "alert-success" : "alert-danger") mb-3">
+                @_message
+            </div>
+        }
+
+        <button class="btn btn-info fw-bold w-100 py-2 rounded-3" @onclick="SaveSettings">
+            @(_saving ? "Bezig met opslaan..." : "Wijzigingen Opslaan")
+        </button>
+    }
+</div>
+
+@code {
+    private Portal.WebApp.Client.Services.UserProfileDto _profile = new();
+    private bool _loading = true;
+    private bool _saving = false;
+    private bool _uploading = false;
+    private bool _notificationsEnabled = true;
+    private string? _message;
+    private bool _isSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var data = await UserService.GetProfileAsync();
+            if (data != null)
+            {
+                _profile = data;
+            }
+        }
+        catch
+        {
+            _message = "Kon profiel niet laden.";
+            _isSuccess = false;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _uploading = true;
+        _message = null;
+        var file = e.File;
+        if (file != null)
+        {
+            var uploadedUrl = await UserService.UploadProfilePictureAsync(file);
+            if (!string.IsNullOrEmpty(uploadedUrl))
+            {
+                _profile.ProfilePictureUrl = uploadedUrl;
+                _message = "Profielfoto succesvol geüpload!";
+                _isSuccess = true;
+            }
+            else
+            {
+                _message = "Fout bij het uploaden van de foto.";
+                _isSuccess = false;
+            }
+        }
+        _uploading = false;
+    }
+
+    private async Task SaveSettings()
+    {
+        _saving = true;
+        _message = null;
+
+        var success = await UserService.UpdateProfileAsync(_profile.FullName, _profile.ProfilePictureUrl);
+
+        if (success)
+        {
+            // BELANGRIJK: Vraag een nieuw/vernieuwd token op bij de API of forceer een state refresh
+            // Als UserService.UpdateProfileAsync een nieuw token string teruggeeft, kun je dat hier direct meegeven:
+            // bijv: var newToken = await UserService.UpdateProfileAsync(...);
+            // of als de API een refresh-mechanisme heeft:
+
+            // Als je CustomAuthStateProvider een methode heeft om de claims te herladen:
+            if (AuthStateProvider is Portal.WebApp.Client.Services.CustomAuthStateProvider customAuth)
+            {
+                // Forceer een herlading van de AuthenticatieState zodat het menu direct de nieuwe foto pakt
+                // (Als je UserService een methode heeft om een vers JWT-token op te halen na update, roep je hier customAuth.SetTokenAsync(newToken) aan)
+
+                // Om de state direct te triggeren zonder herinloggen (mits je state provider dit oppakt of je triggert een fetch):
+                // We roepen een interne state update aan door de state provider te dwingen te herlezen:
+                await customAuth.GetAuthenticationStateAsync();
+
+                // Om de UI overal direct te verversen:
+                // (Zorg dat je evt. een methode in CustomAuthStateProvider hebt om NotifyAuthenticationStateChanged aan te roepen)
+            }
+
+            // Alternatieve simpele fix voor Blazor WebAssembly als je geen nieuw token van de API terugkrijgt:
+            // Forceer een state change via een kleine pijl of door de state te verversen.
+            // Beter nog: zorg dat je backend bij UpdateProfile een nieuw JWT token teruggeeft dat je hier in SetTokenAsync stopt!
+        }
+
+        _isSuccess = success;
+        _message = success ? "Instellingen succesvol opgeslagen! Je wijzigingen zijn direct doorgevoerd." : "Fout bij het opslaan van instellingen.";
+        _saving = false;
+    }
+}

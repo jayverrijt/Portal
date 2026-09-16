@@ -1,10 +1,12 @@
 @namespace Portal.WebApp.Client.Layout
+@using Portal.WebApp.Client.Services
 @inherits LayoutComponentBase
+@inject Portal.WebApp.Client.Services.UserService UserService
 
 <div class="d-flex w-100 h-100" style="height: 100vh; max-height: 100vh; overflow: hidden;">
     <!-- SIDEBAR -->
     <aside class="@(IsSidebarCollapsed ? "sidebar-collapsed" : "sidebar-expanded") flex-shrink-0 h-100" style="height: 100vh; overflow-y: auto;">
-        <NavMenu IsCollapsed="@IsSidebarCollapsed" OnToggleSidebar="HandleSidebarToggle" />
+        <NavMenu IsCollapsed="@IsSidebarCollapsed" OnToggleSidebar="HandleSidebarToggle" UserProfile="_userProfile" />
     </aside>
 
     <!-- MAIN SCROLLABLE CONTENT -->
@@ -17,6 +19,19 @@
 
 @code {
     private bool IsSidebarCollapsed = false;
+    private UserProfileDto? _userProfile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _userProfile = await UserService.GetProfileAsync();
+        }
+        catch
+        {
+            // Fallback als het ophalen faalt
+        }
+    }
 
     private void HandleSidebarToggle(bool collapsed)
     {

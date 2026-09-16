@@ -38,6 +38,7 @@ public class AuthController : ControllerBase
 
     public class RegisterRequest
     {
+        public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? UserName { get; set; }
         public string Password { get; set; } = string.Empty;
@@ -108,7 +109,8 @@ public class AuthController : ControllerBase
             var user = new ApplicationUser
             {
                 UserName = username,
-                Email = email
+                Email = email,
+                FullName = request.FullName.Trim()
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);

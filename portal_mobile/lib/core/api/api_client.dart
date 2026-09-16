@@ -2,7 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiClient {
-  static const String baseUrl = 'https://portalapi.jayverrijt.nl/api';
+  static const String baseUrl = 'https://portalapi.jayverrijt.nl/api'; // Production Server
+  //static const String baseUrl = 'http://localhost:5230/api'; // Localhost
 
   final Dio dio = Dio(BaseOptions(
     baseUrl: baseUrl,

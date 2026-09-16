@@ -194,16 +194,15 @@ app.UseRouting();
 // CORS MOET direct na UseRouting en vóór Authentication/Authorization
 app.UseCors("AllowAll");
 
+// Zorg dat geüploade bestanden (profielfoto's in wwwroot) bereikbaar zijn via HTTP
+app.UseStaticFiles();
+
 // Vang eventuele preflight OPTIONS requests direct af met status 204
 app.Use(async (context, next) =>
 {
     if (context.Request.Method == "OPTIONS")
     {
-        context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
-        context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
-        context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
         context.Response.StatusCode = StatusCodes.Status204NoContent;
-        await context.Response.CompleteAsync();
         return;
     }
     await next();

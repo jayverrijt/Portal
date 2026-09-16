@@ -10,7 +10,7 @@ string apiBaseUrl;
 
 if (currentUri.Host == "localhost" || currentUri.Host == "127.0.0.1")
 {
-    apiBaseUrl = "http://localhost:5190/";
+    apiBaseUrl = "http://localhost:5230/"; // Gecorrigeerd naar de actieve poort van Portal.API
 }
 else if (currentUri.Host.EndsWith("jayverrijt.nl", StringComparison.OrdinalIgnoreCase))
 {
@@ -18,13 +18,13 @@ else if (currentUri.Host.EndsWith("jayverrijt.nl", StringComparison.OrdinalIgnor
 }
 else
 {
-    apiBaseUrl = $"{currentUri.Scheme}://{currentUri.Host}:5190/";
+    apiBaseUrl = $"{currentUri.Scheme}://{currentUri.Host}:5230/";
 }
 
-// DelegatingHandler registreren
+// DelegatingHandler registreren voor authenticatie headers
 builder.Services.AddScoped<AuthHeaderHandler>();
 
-// HttpClient registreren met AuthHeaderHandler
+// HttpClient registreren gekoppeld aan de AuthHeaderHandler en de juiste API BaseAddress
 builder.Services.AddScoped(sp =>
 {
     var handler = sp.GetRequiredService<AuthHeaderHandler>();
@@ -36,11 +36,11 @@ builder.Services.AddScoped(sp =>
     };
 });
 
-// Authenticatie configuratie
+// Authenticatie en Autorisatie core configuratie
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
-
-builder.Services.AddScoped<CustomAuthStateProvider>(sp => 
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<CustomAuthStateProvider>(sp =>
     new CustomAuthStateProvider(sp.GetService<IJSRuntime>(), sp.GetRequiredService<HttpClient>()));
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthStateProvider>());
 
