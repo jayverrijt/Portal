@@ -152,7 +152,7 @@ class BudgetScreen extends ConsumerWidget {
                             final amount = double.tryParse(amountController.text.replaceAll(',', '.')) ?? 0.0;
                             if (desc.isNotEmpty && amount > 0) {
                               Navigator.of(ctx).pop();
-                              ref.refresh(budgetOverviewProvider);
+                              ref.invalidate(budgetOverviewProvider);
                             }
                           },
                           child: const Text('Toevoegen', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -189,7 +189,7 @@ class BudgetScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: NordColors.nord4),
-            onPressed: () => ref.refresh(budgetOverviewProvider),
+            onPressed: () => ref.invalidate(budgetOverviewProvider),
           ),
         ],
       ),
@@ -364,7 +364,7 @@ class BudgetScreen extends ConsumerWidget {
           return RefreshIndicator(
             color: NordColors.nord8,
             backgroundColor: NordColors.nord1,
-            onRefresh: () async => ref.refresh(budgetOverviewProvider),
+            onRefresh: () async => ref.invalidate(budgetOverviewProvider),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [

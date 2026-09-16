@@ -58,8 +58,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _isSuccess = false;
       });
     } finally {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -103,8 +104,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _isSuccess = false;
       });
     } finally {
-      if (!mounted) return;
-      setState(() => _isUploading = false);
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
     }
   }
 
@@ -145,8 +147,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _isSuccess = false;
       });
     } finally {
-      if (!mounted) return;
-      setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 

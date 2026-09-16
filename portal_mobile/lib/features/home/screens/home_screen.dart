@@ -183,10 +183,10 @@ class HomeScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: NordColors.nord2),
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -206,9 +206,9 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.wb_cloudy_outlined, color: NordColors.nord8, size: 32),
-                    const SizedBox(width: 12),
-                    const Text(
+                    Icon(Icons.wb_cloudy_outlined, color: NordColors.nord8, size: 32),
+                    SizedBox(width: 12),
+                    Text(
                       '19°C',
                       style: TextStyle(
                         color: NordColors.nord6,

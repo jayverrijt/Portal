@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/nord_theme.dart';
 import '../../budget/providers/budget_provider.dart';
-import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -71,7 +70,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       backgroundColor: NordColors.nord0,
       body: Stack(
         children: [
-          // 1. Gehele achtergrond in dezelfde mooie gradient
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -95,8 +93,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
             ),
           ),
-
-          // 2. Onderste Afgeronde Register Card
           Positioned.fill(
             top: cardTopPosition,
             child: Container(
@@ -112,7 +108,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ],
               ),
               child: SingleChildScrollView(
-                // Royere top padding zodat de velden netjes onder het logo vallen
                 padding: const EdgeInsets.fromLTRB(28, 52, 28, 30),
                 child: Center(
                   child: ConstrainedBox(
@@ -256,8 +251,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
             ),
           ),
-
-          // 3. Gecentreerd Logo precies op de rand van de card
           Positioned(
             top: cardTopPosition - 32,
             left: 0,

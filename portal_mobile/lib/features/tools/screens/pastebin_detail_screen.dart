@@ -2,13 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/nord_theme.dart';
-import '../../auth/providers/auth_provider.dart';
 import '../../budget/providers/budget_provider.dart';
 
-// Definieer of importeer hier de apiClientProvider indien deze elders staat.
-// (Controleer of jouw api client provider hier correct wordt ingeladen)
-
-// Provider om de pastebin buffer op te halen van de API (/api/Pastebin)
 final pastebinProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final client = ref.watch(apiClientProvider);
   try {
@@ -38,7 +33,6 @@ class _PastebinDetailScreenState extends ConsumerState<PastebinDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final client = ref.read(apiClientProvider);
-      // POST naar /api/Pastebin overeenkomstig met je ASP.NET Controller [HttpPost] Save([FromBody] PastebinDto dto)
       await client.dio.post('/Pastebin', data: {'content': content});
       ref.invalidate(pastebinProvider);
       if (mounted) {
@@ -88,7 +82,6 @@ class _PastebinDetailScreenState extends ConsumerState<PastebinDetailScreen> {
           final content = data['content'] ?? '';
           final updatedAtStr = data['updatedAt'];
 
-          // Initialiseer de controller eenmalig met de data van de server
           if (!_isInitialized) {
             _controller.text = content;
             _isInitialized = true;
@@ -104,7 +97,6 @@ class _PastebinDetailScreenState extends ConsumerState<PastebinDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Laatst bijgewerkt badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
@@ -124,7 +116,6 @@ class _PastebinDetailScreenState extends ConsumerState<PastebinDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Hoofd-editor container
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.all(16),

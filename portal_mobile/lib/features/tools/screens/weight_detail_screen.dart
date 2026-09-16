@@ -388,7 +388,7 @@ class WeightChartPainter extends CustomPainter {
       canvas.drawCircle(points[i], 4, paintPoint);
 
       final textSpan = TextSpan(
-        text: '${entries[i].weight.toStringAsFixed(1)}',
+        text: entries[i].weight.toStringAsFixed(1),
         style: const TextStyle(color: NordColors.nord13, fontSize: 11, fontWeight: FontWeight.bold),
       );
       final textPainter = TextPainter(
