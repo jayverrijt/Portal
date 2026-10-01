@@ -7,6 +7,8 @@ public class UpdateKanbanCardDto
     public string? Description { get; set; }
     public KanbanColumnStatus Status { get; set; }
     public int? SprintNumber { get; set; }
+    public MoscowPriority? MoscowPriority { get; set; }
     public DateTime? DueDate { get; set; }
     public List<Guid> LabelIds { get; set; } = new();
+    public List<CreateSubTaskDto> SubTasks { get; set; } = new();
 }

@@ -9,9 +9,11 @@ public class KanbanCardDto
     public string? Description { get; set; }
     public KanbanColumnStatus Status { get; set; }
     public int? SprintNumber { get; set; }
+    public MoscowPriority? MoscowPriority { get; set; }
     public Guid BoardId { get; set; }
     public DateTime? DueDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public List<BoardLabelDto> Labels { get; set; } = new();
+    public List<SubTaskDto> SubTasks { get; set; } = new();
 }

@@ -4,19 +4,23 @@ namespace Portal.Domain.Entities;
 
 public class KanbanCard : BaseEntity
 {
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty; // Use Case Naam
     public string? Description { get; set; }
     public KanbanColumnStatus Status { get; set; } = KanbanColumnStatus.Backlog;
 
-    // Sprint indeling (1, 2, 3... null = geen sprint)
+    // Sprint indeling
     public int? SprintNumber { get; set; }
 
-    // Gekoppeld aan het specifieke KanbanBoard
+    // MoSCoW Prioritering
+    public MoscowPriority? MoscowPriority { get; set; }
+
+    // Gekoppeld aan KanbanBoard
     public Guid BoardId { get; set; }
     public KanbanBoard? Board { get; set; }
 
-    // Labels gekoppeld aan deze kaart
+    // Labels & Subtasks
     public ICollection<BoardLabel> Labels { get; set; } = new List<BoardLabel>();
+    public ICollection<SubTask> SubTasks { get; set; } = new List<SubTask>();
 
     public DateTime? DueDate { get; set; }
     public new DateTime? UpdatedAt { get; set; }

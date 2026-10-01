@@ -6,7 +6,7 @@
 @using Portal.WebApp.Client.Components
 @inject HttpClient Http
 
-<PageTitle>FlowBoard Hub</PageTitle>
+<PageTitle>Use Case FlowBoard Hub</PageTitle>
 
 @if (_selectedBoard != null)
 {
@@ -16,7 +16,7 @@
                 <i class="fa-solid fa-arrow-left me-1"></i> Terug naar alle Borden
             </button>
             <h2 class="fw-bold m-0 text-nord-snow">⚡ @_selectedBoard.Title</h2>
-            <p class="text-nord-dim m-0">@(_selectedBoard.Description ?? "Standalone Kanban Workflow")</p>
+            <p class="text-nord-dim m-0">@(_selectedBoard.Description ?? "Standalone Use Case Workflow")</p>
         </div>
     </div>
 
@@ -26,8 +26,8 @@ else
 {
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold m-0 text-nord-snow">⚡ FlowBoard Hub</h2>
-            <p class="text-nord-dim m-0">Beheer al je losse Trello/Kanban borden voor school, werk en persoonlijke projecten</p>
+            <h2 class="fw-bold m-0 text-nord-snow">⚡ Use Case FlowBoard Hub</h2>
+            <p class="text-nord-dim m-0">Beheer al je losse Trello/Kanban borden voor Use Cases, Sprints en Subtasks</p>
         </div>
         <button type="button" class="btn btn-primary" @onclick="() => _showCreateBoardModal = true">
             <i class="fa-solid fa-plus me-1"></i> Nieuw Bord Aanmaken
@@ -50,7 +50,7 @@ else
     {
         <div class="card card-body text-center py-5 bg-nord-dark border-nord">
             <h5 class="text-nord-snow">Nog geen losse FlowBoards aanwezig</h5>
-            <p class="text-nord-dim small">Maak een bord aan om te beginnen (bijv. "Semester 3 Taken" of "Persoonlijk").</p>
+            <p class="text-nord-dim small">Maak een bord aan om te beginnen (bijv. "Semester 3 Use Cases").</p>
             <div>
                 <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => _showCreateBoardModal = true">
                     <i class="fa-solid fa-plus me-1"></i> Eerste Bord Maken
@@ -68,7 +68,7 @@ else
                         <div class="card-body d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h5 class="card-title fw-bold text-nord-snow m-0">@board.Title</h5>
-                                <span class="badge border border-nord text-nord-snow bg-nord-card">@board.CardCount kaarten</span>
+                                <span class="badge border border-nord text-nord-snow bg-nord-card">@board.CardCount Use Cases</span>
                             </div>
                             <p class="card-text text-nord-dim small flex-grow-1">
                                 @(string.IsNullOrWhiteSpace(board.Description) ? "Geen beschrijving" : board.Description)
@@ -99,11 +99,11 @@ else
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Bordtitel</label>
-                        <input type="text" class="form-control" placeholder="bijv. Semester 3 Taken" @bind="_newBoardTitle" />
+                        <input type="text" class="form-control" placeholder="bijv. Semester 3 Use Cases" @bind="_newBoardTitle" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Beschrijving (Optioneel)</label>
-                        <textarea class="form-control" rows="3" placeholder="Korte toelichting over dit bord..." @bind="_newBoardDescription"></textarea>
+                        <textarea class="form-control" rows="3" placeholder="Korte toelichting..." @bind="_newBoardDescription"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -134,7 +134,6 @@ else
     {
         _isLoading = true;
         _errorMessage = null;
-
         try
         {
             _boards = await Http.GetFromJsonAsync<List<KanbanBoardDto>>("api/boards") ?? new();

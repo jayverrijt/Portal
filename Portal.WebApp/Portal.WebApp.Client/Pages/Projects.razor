@@ -9,19 +9,19 @@
 @using Portal.WebApp.Client.Components
 @inject HttpClient Http
 
-<PageTitle>Projecten & FlowBoards</PageTitle>
+<PageTitle>Projecten & Use Case FlowBoards</PageTitle>
 
 <div class="portal-content-scroll p-4">
     @if (_activeProjectForBoard != null)
     {
-        <!-- PROJECT-SPECIFIEK FLOWBOARD WEERGAVE -->
+        <!-- PROJECT-SPECIFIEK FLOWBOARD / USE CASE WEERGAVE -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <button class="btn btn-outline-secondary btn-sm mb-2" @onclick="() => _activeProjectForBoard = null">
                     <i class="fa-solid fa-arrow-left me-1"></i> Terug naar Projecten
                 </button>
-                <h2 class="fw-bold m-0 text-nord-snow">⚡ FlowBoard: @_activeProjectForBoard.Title</h2>
-                <p class="text-nord-dim m-0">Project-specifieke sprints, labels en kanban workflow</p>
+                <h2 class="fw-bold m-0 text-nord-snow">⚡ Use Case Board: @_activeProjectForBoard.Title</h2>
+                <p class="text-nord-dim m-0">Sprint planning, MoSCoW prioritering, labels en subtasks</p>
             </div>
         </div>
 
@@ -33,7 +33,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h2 class="fw-bold m-0 text-nord-snow">📁 Projecten & Vakken</h2>
-                <p class="text-nord-dim m-0">Centraal overzicht van projecten, FlowBoards en documentatie</p>
+                <p class="text-nord-dim m-0">Centraal overzicht van projecten, Use Case borden en documentatie</p>
             </div>
             <button type="button" class="btn btn-primary" @onclick="OpenNewProjectModal">
                 <i class="fa-solid fa-plus me-1"></i> Nieuw Project
@@ -235,7 +235,6 @@
                         </div>
                     }
 
-                    <!-- NIEUW ACCOUNT MACHTIGEN -->
                     <div class="mb-4">
                         <label class="form-label text-nord-snow small fw-semibold">Nieuw account machtigen</label>
                         <div class="input-group">
@@ -254,7 +253,6 @@
                         </div>
                     </div>
 
-                    <!-- BESTAANDE DEELNEMERS -->
                     <div>
                         <h6 class="text-uppercase text-nord-dim fw-bold small mb-2">Actieve Deelnemers (@_sharedMembers.Count)</h6>
                         @if (_isLoadingMembers)
@@ -314,7 +312,7 @@
                 </div>
                 <div class="modal-body text-nord-snow">
                     <p>Weet je zeker dat je het project <strong class="text-nord-ice">"@_projectToDelete.Title"</strong> wilt verwijderen?</p>
-                    <p class="small text-nord-dim mb-0">Alle bijbehorende notities, deadlines en FlowBoard-kaarten worden gewist.</p>
+                    <p class="small text-nord-dim mb-0">Alle bijbehorende notities, deadlines en Use Case borden worden gewist.</p>
                 </div>
                 <div class="modal-footer border-nord">
                     <button type="button" class="btn btn-secondary" @onclick="() => _projectToDelete = null">Annuleren</button>
@@ -414,7 +412,6 @@
     private ProjectDto? _activeProjectForNotes;
     private ProjectDto? _activeProjectForBoard;
 
-    // Sharing & Member state
     private ProjectDto? _projectToShare;
     private string _shareUserEmail = string.Empty;
     private string? _shareModalErrorMessage;
@@ -432,7 +429,6 @@
     {
         _isLoading = true;
         _errorMessage = null;
-
         try
         {
             _projects = await Http.GetFromJsonAsync<List<ProjectDto>>("api/project");
@@ -475,7 +471,6 @@
     private async Task ExecuteShareProject()
     {
         if (_projectToShare == null) return;
-
         if (string.IsNullOrWhiteSpace(_shareUserEmail))
         {
             _shareModalErrorMessage = "Vul een e-mailadres in.";
@@ -484,12 +479,10 @@
 
         _isSharing = true;
         _shareModalErrorMessage = null;
-
         try
         {
             var payload = new { Email = _shareUserEmail.Trim() };
             var response = await Http.PostAsJsonAsync($"api/project/{_projectToShare.Id}/share", payload);
-
             if (response.IsSuccessStatusCode)
             {
                 var targetEmail = _shareUserEmail;
@@ -517,10 +510,8 @@
     private async Task RevokeShare(string userId, string email)
     {
         if (_projectToShare == null) return;
-
         _isRevoking = true;
         _shareModalErrorMessage = null;
-
         try
         {
             var response = await Http.DeleteAsync($"api/project/{_projectToShare.Id}/share/{userId}");
@@ -529,11 +520,6 @@
                 _sharedMembers.RemoveAll(m => m.Id == userId);
                 _successMessage = $"Toegang voor {email} is ingetrokken.";
                 await LoadProjects();
-            }
-            else
-            {
-                var errorObj = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
-                _shareModalErrorMessage = errorObj?.Message ?? "Kon toegang niet intrekken.";
             }
         }
         catch (Exception ex)
@@ -551,7 +537,6 @@
     private async Task ExecuteDeleteProject()
     {
         if (_projectToDelete == null) return;
-
         try
         {
             var response = await Http.DeleteAsync($"api/project/{_projectToDelete.Id}");
@@ -559,10 +544,6 @@
             {
                 _projectToDelete = null;
                 await LoadProjects();
-            }
-            else
-            {
-                _errorMessage = "Project kon niet worden verwijderd.";
             }
         }
         catch (Exception ex)
@@ -599,12 +580,7 @@
 
     private async Task CreateProject()
     {
-        if (string.IsNullOrWhiteSpace(_newProject.Title))
-        {
-            _errorMessage = "Voer een titel in voor het project.";
-            return;
-        }
-
+        if (string.IsNullOrWhiteSpace(_newProject.Title)) return;
         try
         {
             var response = await Http.PostAsJsonAsync("api/project", _newProject);
@@ -613,10 +589,6 @@
                 CloseModals();
                 _newProject = new CreateProjectDto();
                 await LoadProjects();
-            }
-            else
-            {
-                _errorMessage = "Project kon niet worden aangemaakt.";
             }
         }
         catch (Exception ex)
@@ -635,15 +607,7 @@
     private async Task CreateReminder()
     {
         if (_selectedProjectIdForReminder == null) return;
-
-        if (string.IsNullOrWhiteSpace(_newReminder.Title))
-        {
-            _errorMessage = "Voer een titel in voor het actiepunt.";
-            return;
-        }
-
         _newReminder.DueDate = _newReminderDueDate;
-
         try
         {
             var response = await Http.PostAsJsonAsync("api/reminders", _newReminder);
@@ -651,10 +615,6 @@
             {
                 CloseModals();
                 await LoadProjects();
-            }
-            else
-            {
-                _errorMessage = "Actiepunt kon niet worden opgeslagen.";
             }
         }
         catch (Exception ex)
@@ -668,10 +628,7 @@
         try
         {
             var response = await Http.PatchAsync($"api/reminders/{reminder.Id}/toggle", null);
-            if (response.IsSuccessStatusCode)
-            {
-                reminder.IsCompleted = !reminder.IsCompleted;
-            }
+            if (response.IsSuccessStatusCode) reminder.IsCompleted = !reminder.IsCompleted;
         }
         catch (Exception ex)
         {
@@ -684,10 +641,7 @@
         try
         {
             var response = await Http.DeleteAsync($"api/reminders/{reminderId}");
-            if (response.IsSuccessStatusCode)
-            {
-                project.Reminders.RemoveAll(r => r.Id == reminderId);
-            }
+            if (response.IsSuccessStatusCode) project.Reminders.RemoveAll(r => r.Id == reminderId);
         }
         catch (Exception ex)
         {

@@ -50,6 +50,7 @@ public class FlowBoardController : ControllerBase
 
         var cards = await _context.KanbanCards
             .Include(c => c.Labels)
+            .Include(c => c.SubTasks)
             .AsNoTracking()
             .Where(c => c.BoardId == boardId)
             .ToListAsync();
@@ -61,6 +62,7 @@ public class FlowBoardController : ControllerBase
             Description = c.Description,
             Status = c.Status,
             SprintNumber = c.SprintNumber,
+            MoscowPriority = c.MoscowPriority,
             BoardId = c.BoardId,
             DueDate = c.DueDate,
             CreatedAt = c.CreatedAt,
@@ -71,6 +73,13 @@ public class FlowBoardController : ControllerBase
                 Name = l.Name,
                 ColorHex = l.ColorHex,
                 BoardId = l.BoardId
+            }).ToList(),
+            SubTasks = c.SubTasks.Select(st => new SubTaskDto
+            {
+                Id = st.Id,
+                Title = st.Title,
+                Status = st.Status,
+                CardId = st.CardId
             }).ToList()
         });
 
@@ -96,6 +105,7 @@ public class FlowBoardController : ControllerBase
             Description = dto.Description,
             Status = dto.Status,
             SprintNumber = dto.SprintNumber,
+            MoscowPriority = dto.MoscowPriority,
             BoardId = dto.BoardId,
             DueDate = dto.DueDate
         };
@@ -108,6 +118,18 @@ public class FlowBoardController : ControllerBase
             card.Labels = labels;
         }
 
+        if (dto.SubTasks.Any())
+        {
+            foreach (var stDto in dto.SubTasks)
+            {
+                card.SubTasks.Add(new SubTask
+                {
+                    Title = stDto.Title.Trim(),
+                    Status = stDto.Status
+                });
+            }
+        }
+
         await _unitOfWork.KanbanCards.AddAsync(card);
         await _unitOfWork.CompleteAsync();
 
@@ -118,6 +140,7 @@ public class FlowBoardController : ControllerBase
             Description = card.Description,
             Status = card.Status,
             SprintNumber = card.SprintNumber,
+            MoscowPriority = card.MoscowPriority,
             BoardId = card.BoardId,
             DueDate = card.DueDate,
             CreatedAt = card.CreatedAt,
@@ -127,6 +150,13 @@ public class FlowBoardController : ControllerBase
                 Name = l.Name,
                 ColorHex = l.ColorHex,
                 BoardId = l.BoardId
+            }).ToList(),
+            SubTasks = card.SubTasks.Select(st => new SubTaskDto
+            {
+                Id = st.Id,
+                Title = st.Title,
+                Status = st.Status,
+                CardId = st.CardId
             }).ToList()
         });
     }
@@ -162,6 +192,7 @@ public class FlowBoardController : ControllerBase
 
         var card = await _context.KanbanCards
             .Include(c => c.Labels)
+            .Include(c => c.SubTasks)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (card == null) return NotFound(new { message = "Kaart niet gevonden." });
@@ -173,9 +204,11 @@ public class FlowBoardController : ControllerBase
         card.Description = dto.Description;
         card.Status = dto.Status;
         card.SprintNumber = dto.SprintNumber;
+        card.MoscowPriority = dto.MoscowPriority;
         card.DueDate = dto.DueDate;
         card.UpdatedAt = DateTime.UtcNow;
 
+        // Labels bijwerken
         card.Labels.Clear();
         if (dto.LabelIds.Any())
         {
@@ -197,6 +230,7 @@ public class FlowBoardController : ControllerBase
             Description = card.Description,
             Status = card.Status,
             SprintNumber = card.SprintNumber,
+            MoscowPriority = card.MoscowPriority,
             BoardId = card.BoardId,
             DueDate = card.DueDate,
             CreatedAt = card.CreatedAt,
@@ -207,6 +241,13 @@ public class FlowBoardController : ControllerBase
                 Name = l.Name,
                 ColorHex = l.ColorHex,
                 BoardId = l.BoardId
+            }).ToList(),
+            SubTasks = card.SubTasks.Select(st => new SubTaskDto
+            {
+                Id = st.Id,
+                Title = st.Title,
+                Status = st.Status,
+                CardId = st.CardId
             }).ToList()
         });
     }
@@ -226,6 +267,102 @@ public class FlowBoardController : ControllerBase
 
         _unitOfWork.KanbanCards.Delete(card);
         await _unitOfWork.CompleteAsync();
+
+        return NoContent();
+    }
+
+    // --- SubTask Endpoints ---
+
+    [HttpPost("cards/{cardId:guid}/subtasks")]
+    public async Task<ActionResult<SubTaskDto>> CreateSubTask(Guid cardId, [FromBody] CreateSubTaskDto dto)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
+
+        var card = await _context.KanbanCards
+            .Include(c => c.Board)
+            .ThenInclude(b => b.Project)
+            .FirstOrDefaultAsync(c => c.Id == cardId);
+
+        if (card == null) return NotFound(new { message = "Use Case kaart niet gevonden." });
+
+        if (!await UserHasBoardAccess(card.BoardId, currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden);
+
+        var subTask = new SubTask
+        {
+            Title = dto.Title.Trim(),
+            Status = dto.Status,
+            CardId = cardId
+        };
+
+        _context.SubTasks.Add(subTask);
+        await _context.SaveChangesAsync();
+
+        return Ok(new SubTaskDto
+        {
+            Id = subTask.Id,
+            Title = subTask.Title,
+            Status = subTask.Status,
+            CardId = subTask.CardId
+        });
+    }
+
+    [HttpPatch("subtasks/{subTaskId:guid}/status")]
+    public async Task<IActionResult> UpdateSubTaskStatus(Guid subTaskId, [FromBody] UpdateSubTaskDto dto)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
+
+        var subTask = await _context.SubTasks
+            .Include(st => st.Card)
+            .ThenInclude(c => c.Board)
+            .ThenInclude(b => b.Project)
+            .FirstOrDefaultAsync(st => st.Id == subTaskId);
+
+        if (subTask == null) return NotFound(new { message = "Subtask niet gevonden." });
+
+        if (!await UserHasBoardAccess(subTask.Card.BoardId, currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden);
+
+        // Zowel de titel als de status correct bijwerken
+        if (!string.IsNullOrWhiteSpace(dto.Title))
+        {
+            subTask.Title = dto.Title.Trim();
+        }
+        subTask.Status = dto.Status;
+        subTask.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new SubTaskDto
+        {
+            Id = subTask.Id,
+            Title = subTask.Title,
+            Status = subTask.Status,
+            CardId = subTask.CardId
+        });
+    }
+
+    [HttpDelete("subtasks/{subTaskId:guid}")]
+    public async Task<IActionResult> DeleteSubTask(Guid subTaskId)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
+
+        var subTask = await _context.SubTasks
+            .Include(st => st.Card)
+            .ThenInclude(c => c.Board)
+            .ThenInclude(b => b.Project)
+            .FirstOrDefaultAsync(st => st.Id == subTaskId);
+
+        if (subTask == null) return NotFound(new { message = "Subtask niet gevonden." });
+
+        if (!await UserHasBoardAccess(subTask.Card.BoardId, currentUserId))
+            return StatusCode(StatusCodes.Status403Forbidden);
+
+        _context.SubTasks.Remove(subTask);
+        await _context.SaveChangesAsync();
 
         return NoContent();
     }

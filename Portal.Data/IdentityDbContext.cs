@@ -14,7 +14,7 @@ public class PortalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Note> Notes => Set<Note>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
     public DbSet<ScheduledTask> ScheduledTasks => Set<ScheduledTask>();
-
+    public DbSet<SubTask> SubTasks => Set<SubTask>();
     public DbSet<KanbanCard> KanbanCards { get; set; } = null!;
     public DbSet<BoardLabel> BoardLabels { get; set; } = null!;
     public DbSet<KanbanBoard> KanbanBoards { get; set; } = null!;
