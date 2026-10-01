@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/theme/nord_theme.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../projects/providers/project_provider.dart';
+import '../providers/project_provider.dart';
+import '../models/project_models.dart';
 import 'flowboard_screen.dart';
 import 'note_editor_screen.dart';
 

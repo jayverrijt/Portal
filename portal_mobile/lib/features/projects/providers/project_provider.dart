@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
+import '../models/kanban_card_dto.dart';
 import '../models/project_models.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
@@ -48,16 +49,12 @@ final projectCardsProvider = FutureProvider.autoDispose.family<List<KanbanCardDt
       }
     }
 
-    if (rawBoards.isEmpty) {
-      return [];
-    }
+    if (rawBoards.isEmpty) return [];
 
     final firstBoard = rawBoards.first as Map<String, dynamic>;
     final boardId = (firstBoard['id'] ?? firstBoard['Id'])?.toString() ?? '';
 
-    if (boardId.isEmpty) {
-      return [];
-    }
+    if (boardId.isEmpty) return [];
 
     final cardsRes = await client.dio.get('/FlowBoard', queryParameters: {'boardId': boardId});
     if (cardsRes.statusCode == 200 && cardsRes.data is List) {
@@ -123,8 +120,6 @@ class ProjectActionsNotifier extends Notifier<void> {
     return null;
   }
 
-  // --- Project Actions ---
-
   Future<bool> createProject(String title, String? description) async {
     try {
       final res = await _client.dio.post('/Project', data: {
@@ -156,8 +151,6 @@ class ProjectActionsNotifier extends Notifier<void> {
     }
   }
 
-  // --- FlowBoard Card Actions ---
-
   Future<bool> createCard({
     required String projectId,
     String? boardId,
@@ -165,13 +158,12 @@ class ProjectActionsNotifier extends Notifier<void> {
     String? description,
     required KanbanStatus status,
     int? sprintNumber,
+    MoscowPriority? moscowPriority,
+    List<Map<String, dynamic>> subTasks = const [],
   }) async {
     try {
       final effectiveBoardId = boardId ?? await _resolveBoardId(projectId);
-      if (effectiveBoardId == null || effectiveBoardId.isEmpty) {
-        debugPrint('Fout: Geen geldig boardId gevonden voor projectId $projectId');
-        return false;
-      }
+      if (effectiveBoardId == null || effectiveBoardId.isEmpty) return false;
 
       final payload = {
         'boardId': effectiveBoardId,
@@ -179,7 +171,9 @@ class ProjectActionsNotifier extends Notifier<void> {
         'description': (description != null && description.isNotEmpty) ? description : null,
         'status': status.index,
         'sprintNumber': sprintNumber ?? 1,
+        'moscowPriority': moscowPriority?.index,
         'labelIds': <String>[],
+        'subTasks': subTasks,
       };
 
       final res = await _client.dio.post('/FlowBoard', data: payload);
@@ -187,9 +181,6 @@ class ProjectActionsNotifier extends Notifier<void> {
         ref.invalidate(projectCardsProvider(projectId));
         return true;
       }
-      return false;
-    } on DioException catch (e) {
-      debugPrint('Dio error bij aanmaken kaart: ${e.response?.statusCode} - ${e.response?.data}');
       return false;
     } catch (e) {
       debugPrint('Fout bij aanmaken kaart: $e');
@@ -203,20 +194,26 @@ class ProjectActionsNotifier extends Notifier<void> {
     required String title,
     String? description,
     required KanbanStatus status,
+    int? sprintNumber,
+    MoscowPriority? moscowPriority,
+    List<Map<String, dynamic>> subTasks = const [],
   }) async {
     try {
-      final res = await _client.dio.put('/FlowBoard/$cardId', data: {
+      final payload = {
         'title': title,
         'description': (description != null && description.isNotEmpty) ? description : null,
         'status': status.index,
-      });
+        'sprintNumber': sprintNumber,
+        'moscowPriority': moscowPriority?.index,
+        'labelIds': <String>[],
+        'subTasks': subTasks,
+      };
+
+      final res = await _client.dio.put('/FlowBoard/$cardId', data: payload);
       if (res.statusCode == 200 || res.statusCode == 204) {
         ref.invalidate(projectCardsProvider(projectId));
         return true;
       }
-      return false;
-    } on DioException catch (e) {
-      debugPrint('Dio error bij bewerken kaart: ${e.response?.statusCode} - ${e.response?.data}');
       return false;
     } catch (e) {
       debugPrint('Fout bij bewerken kaart: $e');
@@ -255,7 +252,45 @@ class ProjectActionsNotifier extends Notifier<void> {
     }
   }
 
-  // --- Notes Actions ---
+  // Losse subtask acties (indien de API hier aparte endpoints voor heeft)
+  Future<bool> updateSubTask({
+    required String projectId,
+    required String subTaskId,
+    required String title,
+    required int status,
+  }) async {
+    try {
+      final res = await _client.dio.patch(
+        '/FlowBoard/subtasks/$subTaskId',
+        data: {'title': title, 'status': status},
+      );
+      if (res.statusCode == 200 || res.statusCode == 204) {
+        ref.invalidate(projectCardsProvider(projectId));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Fout bij bijwerken subtask: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteSubTask({
+    required String projectId,
+    required String subTaskId,
+  }) async {
+    try {
+      final res = await _client.dio.delete('/FlowBoard/subtasks/$subTaskId');
+      if (res.statusCode == 200 || res.statusCode == 204) {
+        ref.invalidate(projectCardsProvider(projectId));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Fout bij verwijderen subtask: $e');
+      return false;
+    }
+  }
 
   Future<bool> saveNote({
     String? noteId,
@@ -275,7 +310,6 @@ class ProjectActionsNotifier extends Notifier<void> {
           : await _client.dio.put('/Notes/$noteId', data: data);
 
       if (res.statusCode == 200 || res.statusCode == 201 || res.statusCode == 204) {
-        // Direct geforceerd verversen en wachten tot de nieuwe data binnen is
         ref.invalidate(projectNotesProvider(projectId));
         ref.invalidate(projectsProvider);
         await ref.read(projectNotesProvider(projectId).future);

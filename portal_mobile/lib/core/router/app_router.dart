@@ -9,7 +9,7 @@ import '../../features/notes/screens/notes_screen.dart';
 import '../../features/projects/screens/flowboards_hub_screen.dart';
 import '../../features/budget/screens/budget_screen.dart';
 import '../../features/tools/screens/tools_screen.dart';
-import '../../features/settings/screens/settings_screen.dart'; // <--- Toegevoegd
+import '../../features/settings/screens/settings_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authNotifierProvider);
@@ -57,7 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ToolsScreen(),
       ),
       GoRoute(
-        path: '/settings', // <--- Toegevoegd als route
+        path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),
     ],

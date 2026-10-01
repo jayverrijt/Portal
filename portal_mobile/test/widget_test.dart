@@ -5,6 +5,7 @@ import 'package:portal_mobile/features/auth/providers/auth_provider.dart';
 import 'package:portal_mobile/features/projects/models/project_models.dart';
 import 'package:portal_mobile/features/projects/providers/project_provider.dart';
 import 'package:portal_mobile/features/projects/screens/projects_screen.dart';
+import 'package:portal_mobile/features/projects/screens/projects_screen.dart';
 
 class MockAuthNotifier extends AuthNotifier {
   @override
@@ -19,9 +20,11 @@ void main() {
       ProjectDto(
         id: '1',
         title: 'Project Alpha',
+        description: 'Test project',
         ownerId: 'user-1',
         createdAt: DateTime(2026, 1, 1),
         notes: [],
+        cards: [],
       ),
     ];
 
@@ -31,7 +34,7 @@ void main() {
           authNotifierProvider.overrideWith(() => MockAuthNotifier()),
           projectsProvider.overrideWith((ref) async => mockProjects),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           home: ProjectsScreen(),
         ),
       ),

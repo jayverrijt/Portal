@@ -8,7 +8,7 @@ import '../providers/project_provider.dart';
 
 class FlowboardScreen extends ConsumerStatefulWidget {
   final ProjectDto project;
-  final String source; // 'hub' of 'projects' om te bepalen wat gehighlight moet worden in de drawer
+  final String source;
 
   const FlowboardScreen({
     super.key,
@@ -70,7 +70,6 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: NordColors.nord1,
-        // Altijd een terug-pijl op subpagina's zodat je nooit vastzit
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: NordColors.nord6),
           onPressed: () => Navigator.of(context).pop(),
@@ -130,28 +129,17 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
                             shape: BoxShape.circle,
                             border: Border.all(color: NordColors.nord2),
                           ),
-                          child: const Icon(
-                            Icons.bolt,
-                            color: NordColors.nord13,
-                            size: 24,
-                          ),
+                          child: const Icon(Icons.bolt, color: NordColors.nord13, size: 24),
                         ),
                         const SizedBox(width: 10),
                         const Text(
                           'Portal',
-                          style: TextStyle(
-                            color: NordColors.nord6,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(color: NordColors.nord6, fontSize: 22, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Project & Finance Suite',
-                      style: TextStyle(color: NordColors.nord4, fontSize: 12),
-                    ),
+                    const Text('Project & Finance Suite', style: TextStyle(color: NordColors.nord4, fontSize: 12)),
                   ],
                 ),
               ),
@@ -253,15 +241,8 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
         child: const Icon(Icons.add),
       ),
       body: cardsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: NordColors.nord8),
-        ),
-        error: (err, _) => Center(
-          child: Text(
-            'Fout bij laden kaarten: $err',
-            style: const TextStyle(color: NordColors.nord11),
-          ),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator(color: NordColors.nord8)),
+        error: (err, _) => Center(child: Text('Fout bij laden kaarten: $err', style: const TextStyle(color: NordColors.nord11))),
         data: (cards) {
           return TabBarView(
             controller: _tabController,
@@ -270,9 +251,7 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
                 ..sort((a, b) => a.order.compareTo(b.order));
 
               if (columnCards.isEmpty) {
-                return const Center(
-                  child: Text('Geen kaarten', style: TextStyle(color: NordColors.nord3)),
-                );
+                return const Center(child: Text('Geen kaarten', style: TextStyle(color: NordColors.nord3)));
               }
 
               return ListView.builder(
@@ -291,6 +270,9 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
   }
 
   Widget _buildCardItem(KanbanCardDto card, Color accentColor) {
+    final doneSubTasks = card.subTasks.where((st) => st.status == 2).length;
+    final totalSubTasks = card.subTasks.length;
+
     return InkWell(
       onTap: () => _openCardDialog(context, card: card),
       borderRadius: BorderRadius.circular(8),
@@ -313,36 +295,56 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
                   Expanded(
                     child: Text(
                       card.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: NordColors.nord6,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: NordColors.nord6, fontSize: 14),
                     ),
                   ),
-                  if (card.sprint != null && card.sprint!.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: NordColors.nord2,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        card.sprint!,
-                        style: const TextStyle(
-                          color: NordColors.nord4,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                  Row(
+                    children: [
+                      if (card.moscowPriority != null)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: NordColors.nord0,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: NordColors.nord2),
+                          ),
+                          child: Text(
+                            card.moscowPriority.toString().split('.').last.toUpperCase(),
+                            style: const TextStyle(color: NordColors.nord8, fontSize: 9, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
-                    ),
+                      if (card.sprintNumber != null || (card.sprint != null && card.sprint!.isNotEmpty))
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: NordColors.nord2,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            card.sprintNumber != null ? 'S${card.sprintNumber}' : card.sprint!,
+                            style: const TextStyle(color: NordColors.nord4, fontSize: 10, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
               if (card.description != null && card.description!.isNotEmpty) ...[
                 const SizedBox(height: 6),
-                Text(
-                  card.description!,
-                  style: const TextStyle(color: NordColors.nord4, fontSize: 12),
+                Text(card.description!, style: const TextStyle(color: NordColors.nord4, fontSize: 12)),
+              ],
+              if (totalSubTasks > 0) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.list_alt, size: 14, color: NordColors.nord4),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Subtasks: $doneSubTasks / $totalSubTasks',
+                      style: const TextStyle(color: NordColors.nord4, fontSize: 11),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -356,6 +358,17 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
     final titleController = TextEditingController(text: card?.title ?? '');
     final descController = TextEditingController(text: card?.description ?? '');
     var selectedStatus = card?.status ?? initialStatus ?? KanbanStatus.currentSprint;
+    int selectedSprintNumber = card?.sprintNumber ?? 1;
+    MoscowPriority? selectedMoscow = card?.moscowPriority;
+
+    List<Map<String, dynamic>> subTasksList = card?.subTasks.map((st) => <String, dynamic>{
+      'id': st.id.isNotEmpty ? st.id : null,
+      'title': st.title,
+      'status': st.status,
+    }).toList() ?? [];
+
+    final newSubTaskController = TextEditingController();
+    int newSubTaskStatus = 0;
 
     showModalBottomSheet(
       context: context,
@@ -374,119 +387,269 @@ class _FlowboardScreenState extends ConsumerState<FlowboardScreen>
                 top: 16,
                 bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        card == null ? 'Nieuwe Kaart' : 'Kaart Bewerken',
-                        style: const TextStyle(
-                          color: NordColors.nord6,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          card == null ? 'Nieuwe Use Case' : 'Use Case Bewerken',
+                          style: const TextStyle(color: NordColors.nord6, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
+                        if (card != null)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: NordColors.nord11),
+                            onPressed: () async {
+                              Navigator.pop(ctx);
+                              await ref.read(projectActionsProvider.notifier).deleteCard(widget.project.id, card.id);
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: titleController,
+                      autofocus: card == null,
+                      style: const TextStyle(color: NordColors.nord6),
+                      decoration: const InputDecoration(labelText: 'Titel (Use Case Naam)', filled: true, fillColor: NordColors.nord2),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: descController,
+                      maxLines: 2,
+                      style: const TextStyle(color: NordColors.nord6),
+                      decoration: const InputDecoration(labelText: 'Beschrijving (optioneel)', filled: true, fillColor: NordColors.nord2),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: selectedSprintNumber,
+                            dropdownColor: NordColors.nord2,
+                            style: const TextStyle(color: NordColors.nord6),
+                            decoration: const InputDecoration(labelText: 'Sprint', filled: true, fillColor: NordColors.nord2),
+                            items: List.generate(10, (i) => i + 1).map((s) => DropdownMenuItem(value: s, child: Text('Sprint $s'))).toList(),
+                            onChanged: (val) => setModalState(() => selectedSprintNumber = val ?? 1),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: DropdownButtonFormField<MoscowPriority?>(
+                            initialValue: selectedMoscow,
+                            dropdownColor: NordColors.nord2,
+                            style: const TextStyle(color: NordColors.nord6),
+                            decoration: const InputDecoration(labelText: 'MoSCoW Prioriteit', filled: true, fillColor: NordColors.nord2),
+                            items: const [
+                              DropdownMenuItem(value: null, child: Text('Geen')),
+                              DropdownMenuItem(value: MoscowPriority.mustHave, child: Text('Must Have')),
+                              DropdownMenuItem(value: MoscowPriority.shouldHave, child: Text('Should Have')),
+                              DropdownMenuItem(value: MoscowPriority.couldHave, child: Text('Could Have')),
+                              DropdownMenuItem(value: MoscowPriority.wontHave, child: Text('Won\'t Have')),
+                            ],
+                            onChanged: (val) => setModalState(() => selectedMoscow = val),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Status / Kolom:', style: TextStyle(color: NordColors.nord4, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<KanbanStatus>(
+                      initialValue: selectedStatus,
+                      dropdownColor: NordColors.nord2,
+                      style: const TextStyle(color: NordColors.nord6),
+                      decoration: const InputDecoration(filled: true, fillColor: NordColors.nord2),
+                      items: _statuses.map((s) => DropdownMenuItem(value: s, child: Text(_statusLabels[s]!))).toList(),
+                      onChanged: (val) => setModalState(() => selectedStatus = val ?? selectedStatus),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: NordColors.nord0,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: NordColors.nord2),
                       ),
-                      if (card != null)
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: NordColors.nord11),
-                          onPressed: () async {
-                            Navigator.pop(ctx);
-                            await ref.read(projectActionsProvider.notifier).deleteCard(
-                              widget.project.id,
-                              card.id,
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: titleController,
-                    autofocus: card == null,
-                    style: const TextStyle(color: NordColors.nord6),
-                    decoration: const InputDecoration(
-                      labelText: 'Titel',
-                      labelStyle: TextStyle(color: NordColors.nord4),
-                      filled: true,
-                      fillColor: NordColors.nord2,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: descController,
-                    maxLines: 3,
-                    style: const TextStyle(color: NordColors.nord6),
-                    decoration: const InputDecoration(
-                      labelText: 'Beschrijving (optioneel)',
-                      labelStyle: TextStyle(color: NordColors.nord4),
-                      filled: true,
-                      fillColor: NordColors.nord2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Status / Kolom:', style: TextStyle(color: NordColors.nord4, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<KanbanStatus>(
-                    initialValue: selectedStatus,
-                    dropdownColor: NordColors.nord2,
-                    style: const TextStyle(color: NordColors.nord6),
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: NordColors.nord2,
-                    ),
-                    items: _statuses.map((s) {
-                      return DropdownMenuItem(
-                        value: s,
-                        child: Text(_statusLabels[s]!),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() => selectedStatus = val);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: NordColors.nord8,
-                      foregroundColor: NordColors.nord0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () async {
-                      final title = titleController.text.trim();
-                      if (title.isEmpty) return;
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.list_alt, color: NordColors.nord8, size: 18),
+                              SizedBox(width: 6),
+                              Text('Subtasks Workflow (Todo, Testing, Done)', style: TextStyle(color: NordColors.nord6, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: TextField(
+                                  controller: newSubTaskController,
+                                  style: const TextStyle(color: NordColors.nord6, fontSize: 13),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Subtask titel...',
+                                    hintStyle: TextStyle(color: NordColors.nord3),
+                                    filled: true,
+                                    fillColor: NordColors.nord2,
+                                    isDense: true,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                flex: 2,
+                                child: DropdownButtonFormField<int>(
+                                  initialValue: newSubTaskStatus,
+                                  dropdownColor: NordColors.nord2,
+                                  style: const TextStyle(color: NordColors.nord6, fontSize: 12),
+                                  decoration: const InputDecoration(
+                                    filled: true,
+                                    fillColor: NordColors.nord2,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(value: 0, child: Text('Todo')),
+                                    DropdownMenuItem(value: 1, child: Text('Testing')),
+                                    DropdownMenuItem(value: 2, child: Text('Done')),
+                                  ],
+                                  onChanged: (val) => setModalState(() => newSubTaskStatus = val ?? 0),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: NordColors.nord8,
+                                  foregroundColor: NordColors.nord0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.add, size: 16),
+                                label: const Text('Toevoegen', style: TextStyle(fontSize: 12)),
+                                onPressed: () {
+                                  if (newSubTaskController.text.trim().isNotEmpty) {
+                                    setModalState(() {
+                                      subTasksList.add(<String, dynamic>{
+                                        'title': newSubTaskController.text.trim(),
+                                        'status': newSubTaskStatus,
+                                      });
+                                      newSubTaskController.clear();
+                                      newSubTaskStatus = 0;
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          if (subTasksList.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Text('Nog geen subtasks toegevoegd.', style: TextStyle(color: NordColors.nord3, fontSize: 12)),
+                            )
+                          else
+                            ...subTasksList.map((st) {
+                              final stStatus = st['status'] ?? 0;
+                              String statusLabel = 'Todo';
+                              Color statusColor = NordColors.nord3;
+                              if (stStatus == 1) {
+                                statusLabel = 'Testing';
+                                statusColor = NordColors.nord13;
+                              } else if (stStatus == 2) {
+                                statusLabel = 'Done';
+                                statusColor = NordColors.nord14;
+                              }
 
-                      Navigator.pop(ctx);
-                      final notifier = ref.read(projectActionsProvider.notifier);
+                              return Container(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: NordColors.nord1,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: NordColors.nord2),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        st['title'],
+                                        style: const TextStyle(color: NordColors.nord6, fontSize: 13),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: statusColor.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        statusLabel,
+                                        style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: NordColors.nord11, size: 18),
+                                      constraints: const BoxConstraints(),
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () => setModalState(() => subTasksList.remove(st)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: NordColors.nord8,
+                        foregroundColor: NordColors.nord0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () async {
+                        final title = titleController.text.trim();
+                        if (title.isEmpty) return;
 
-                      if (card == null) {
-                        await notifier.createCard(
-                          projectId: widget.project.id,
-                          title: title,
-                          description: descController.text.trim(),
-                          status: selectedStatus,
-                          sprintNumber: 1,
-                        );
-                      } else {
-                        if (card.status != selectedStatus) {
-                          await notifier.updateCardStatus(widget.project.id, card.id, selectedStatus);
+                        Navigator.pop(ctx);
+                        final notifier = ref.read(projectActionsProvider.notifier);
+
+                        if (card == null) {
+                          await notifier.createCard(
+                            projectId: widget.project.id,
+                            title: title,
+                            description: descController.text.trim(),
+                            status: selectedStatus,
+                            sprintNumber: selectedSprintNumber,
+                            moscowPriority: selectedMoscow,
+                            subTasks: subTasksList,
+                          );
+                        } else {
+                          await notifier.editCard(
+                            projectId: widget.project.id,
+                            cardId: card.id,
+                            title: title,
+                            description: descController.text.trim(),
+                            status: selectedStatus,
+                            sprintNumber: selectedSprintNumber,
+                            moscowPriority: selectedMoscow,
+                            subTasks: subTasksList,
+                          );
                         }
-                        await notifier.editCard(
-                          projectId: widget.project.id,
-                          cardId: card.id,
-                          title: title,
-                          description: descController.text.trim(),
-                          status: selectedStatus,
-                        );
-                      }
-                    },
-                    child: Text(card == null ? 'Aanmaken' : 'Opslaan'),
-                  ),
-                ],
+                      },
+                      child: Text(card == null ? 'Aanmaken' : 'Opslaan', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
               ),
             );
           },
