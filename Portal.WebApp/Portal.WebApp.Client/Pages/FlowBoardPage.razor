@@ -15,7 +15,7 @@
             <button type="button" class="btn btn-outline-secondary btn-sm mb-2" @onclick="() => _selectedBoard = null">
                 <i class="fa-solid fa-arrow-left me-1"></i> Terug naar alle Borden
             </button>
-            <h2 class="fw-bold m-0 text-nord-snow">⚡ @_selectedBoard.Title</h2>
+            <h2 class="fw-bold m-0 text-nord-snow">@_selectedBoard.Title</h2>
             <p class="text-nord-dim m-0">@(_selectedBoard.Description ?? "Standalone Use Case Workflow")</p>
         </div>
     </div>
@@ -26,7 +26,7 @@ else
 {
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold m-0 text-nord-snow">⚡ Use Case FlowBoard Hub</h2>
+            <h2 class="fw-bold m-0 text-nord-snow">Use Case FlowBoard Hub</h2>
             <p class="text-nord-dim m-0">Beheer al je losse Trello/Kanban borden voor Use Cases, Sprints en Subtasks</p>
         </div>
         <button type="button" class="btn btn-primary" @onclick="() => _showCreateBoardModal = true">
