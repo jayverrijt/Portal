@@ -67,8 +67,8 @@
                              @ondragstart="() => _draggedCard = card"
                              @onclick="() => OpenEditCardModal(card)">
 
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="fw-bold m-0 text-nord-snow pe-2 text-break" title="@card.Title">@card.Title</h6>
+                            <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                                <h6 class="fw-bold m-0 text-nord-snow text-truncate flex-grow-1" title="@card.Title">@card.Title</h6>
                                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
                                     @if (card.MoscowPriority.HasValue)
                                     {
@@ -79,7 +79,7 @@
                                     @if (card.SprintNumber.HasValue)
                                     {
                                         <span class="badge border border-nord text-nord-snow bg-nord-dark small" style="font-size: 0.7rem;">
-                                            S@card.SprintNumber
+                                            @($"S{card.SprintNumber.Value}")
                                         </span>
                                     }
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" style="font-size: 0.7rem; height: 22px;" title="Use Case bewerken" @onclick="() => OpenEditCardModal(card)" @onclick:stopPropagation="true">

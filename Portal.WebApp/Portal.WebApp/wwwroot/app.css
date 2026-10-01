@@ -263,11 +263,13 @@ a:hover {
     padding-bottom: 12px;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
+    align-items: stretch;
 }
 
 .flowboard-column {
+    min-width: 310px;
+    width: 310px;
     flex: 0 0 310px;
-    max-width: 310px;
     background-color: var(--nord1);
     border-radius: 8px;
     display: flex;
@@ -283,6 +285,7 @@ a:hover {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    flex-grow: 1;
 }
 
 .flowboard-card {
@@ -347,7 +350,7 @@ html, body, app, Routes, [b-app] {
 .portal-content-scroll {
     height: 100vh !important;
     max-height: 100vh !important;
-    overflow-y: scroll !important; /* 'scroll' in plaats van 'auto' dwingt de renderer tot scrollen */
+    overflow-y: scroll !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
 }
