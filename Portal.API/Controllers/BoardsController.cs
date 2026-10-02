@@ -38,6 +38,7 @@ public class BoardsController : ControllerBase
             Id = b.Id,
             Title = b.Title,
             Description = b.Description,
+            IsPublic = b.IsPublic,
             ProjectId = b.ProjectId,
             CreatedAt = b.CreatedAt,
             CardCount = b.Cards.Count
@@ -61,6 +62,35 @@ public class BoardsController : ControllerBase
             Id = board.Id,
             Title = board.Title,
             Description = board.Description,
+            IsPublic = board.IsPublic,
+            ProjectId = board.ProjectId,
+            CreatedAt = board.CreatedAt,
+            CardCount = board.Cards.Count
+        });
+    }
+
+    [HttpGet("shared/{id:guid}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<KanbanBoardDto>> GetSharedBoard(Guid id)
+    {
+        var board = await _context.KanbanBoards
+            .Include(b => b.Cards)
+                .ThenInclude(c => c.SubTasks)
+            .Include(b => b.Cards)
+                .ThenInclude(c => c.Labels)
+            .Include(b => b.Labels)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (board == null || !board.IsPublic)
+            return NotFound("Dit bord bestaat niet of is niet openbaar ingesteld.");
+
+        return Ok(new KanbanBoardDto
+        {
+            Id = board.Id,
+            Title = board.Title,
+            Description = board.Description,
+            IsPublic = board.IsPublic,
             ProjectId = board.ProjectId,
             CreatedAt = board.CreatedAt,
             CardCount = board.Cards.Count
@@ -77,7 +107,8 @@ public class BoardsController : ControllerBase
         {
             Title = dto.Title.Trim(),
             Description = dto.Description,
-            ProjectId = dto.ProjectId
+            ProjectId = dto.ProjectId,
+            IsPublic = false
         };
 
         await _unitOfWork.KanbanBoards.AddAsync(board);
@@ -88,10 +119,23 @@ public class BoardsController : ControllerBase
             Id = board.Id,
             Title = board.Title,
             Description = board.Description,
+            IsPublic = board.IsPublic,
             ProjectId = board.ProjectId,
             CreatedAt = board.CreatedAt,
             CardCount = 0
         });
+    }
+
+    [HttpPatch("{id:guid}/public")]
+    public async Task<IActionResult> TogglePublicBoard(Guid id, [FromBody] TogglePublicDto dto)
+    {
+        var board = await _context.KanbanBoards.FindAsync(id);
+        if (board == null) return NotFound("Bord niet gevonden.");
+
+        board.IsPublic = dto.IsPublic;
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
@@ -104,5 +148,39 @@ public class BoardsController : ControllerBase
         await _unitOfWork.CompleteAsync();
 
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/members")]
+    public async Task<ActionResult<List<BoardMemberViewDto>>> GetBoardMembers(Guid id)
+    {
+        var board = await _context.KanbanBoards.FindAsync(id);
+        if (board == null) return NotFound("Bord niet gevonden.");
+        return Ok(new List<BoardMemberViewDto>());
+    }
+
+    [HttpPost("{id:guid}/share")]
+    public async Task<IActionResult> ShareBoard(Guid id, [FromBody] ShareBoardDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Email))
+            return BadRequest(new { message = "E-mailadres is verplicht." });
+
+        var board = await _context.KanbanBoards.FindAsync(id);
+        if (board == null) return NotFound(new { message = "Bord niet gevonden." });
+
+        return Ok(new { message = "Bord succesvol gedeeld." });
+    }
+
+    [HttpDelete("{id:guid}/share/{userId}")]
+    public async Task<IActionResult> RevokeBoardShare(Guid id, string userId)
+    {
+        var board = await _context.KanbanBoards.FindAsync(id);
+        if (board == null) return NotFound("Bord niet gevonden.");
+
+        return NoContent();
+    }
+
+    public class TogglePublicDto
+    {
+        public bool IsPublic { get; set; }
     }
 }

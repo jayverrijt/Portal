@@ -1,0 +1,266 @@
+@page "/shared-board/{BoardId:guid}"
+@layout BlankLayout
+@using System.Net.Http.Json
+@using Portal.Domain.Enums
+@using Portal.DTOs.Kanban
+@inject HttpClient Http
+
+<PageTitle>Gedeeld FlowBoard - Read Only</PageTitle>
+
+<div class="portal-content-scroll p-4">
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-nord-dim">Openbaar bord laden...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="card card-body text-center py-5 bg-nord-dark border-nord">
+            <h4 class="text-nord-red mb-2"><i class="fa-solid fa-lock me-2"></i>Geen toegang</h4>
+            <p class="text-nord-dim">@_errorMessage</p>
+        </div>
+    }
+    else if (_board != null)
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <span class="badge bg-nord-surface border border-nord text-nord-ice mb-2">
+                    <i class="fa-solid fa-eye me-1"></i> Read-Only Modus (Alleen Lezen)
+                </span>
+                <h2 class="fw-bold m-0 text-nord-snow">@_board.Title</h2>
+                <p class="text-nord-dim m-0">@(_board.Description ?? "Openbaar Use Case Workflow")</p>
+            </div>
+        </div>
+
+        <!-- READ-ONLY KANBAN CANVAS -->
+        <div class="flowboard-canvas">
+            @foreach (var col in _columns)
+            {
+                var columnCards = _cards.Where(c => c.Status == col.Status).ToList();
+
+                <div class="flowboard-column shadow-sm">
+                    <!-- KOLOM HEADER -->
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-nord bg-nord-dark rounded-top">
+                        <span class="fw-bold small text-uppercase" style="color: @col.HeaderColor;">@col.Title</span>
+                        <span class="badge bg-secondary rounded-pill">@columnCards.Count</span>
+                    </div>
+
+                    <!-- KAARTEN LIJST (KLIKBAAR VOOR SUBTASKS MODAL) -->
+                    <div class="flowboard-card-list flex-grow-1">
+                        @foreach (var cardItem in columnCards)
+                        {
+                            var currentCard = cardItem;
+                            var doneSubTasks = currentCard.SubTasks.Count(st => st.Status == SubTaskStatus.Done);
+                            var totalSubTasks = currentCard.SubTasks.Count;
+
+                            <div class="flowboard-card card p-3 shadow-sm cursor-pointer position-relative user-select-none"
+                                 @onclick="() => OpenCardDetailsModal(currentCard)">
+                                <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                                    <h6 class="fw-bold m-0 text-nord-snow text-break flex-grow-1">@currentCard.Title</h6>
+                                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                        @if (currentCard.MoscowPriority.HasValue)
+                                        {
+                                            <span class="badge bg-nord-surface border border-nord text-nord-ice" style="font-size: 0.65rem;">
+                                                @currentCard.MoscowPriority.Value.ToString()
+                                            </span>
+                                        }
+                                        @if (currentCard.SprintNumber.HasValue)
+                                        {
+                                            <span class="badge border border-nord text-nord-snow bg-nord-dark small" style="font-size: 0.7rem;">
+                                                @($"S{currentCard.SprintNumber.Value}")
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(currentCard.Description))
+                                {
+                                    <p class="small text-nord-dim mb-2 text-break">@currentCard.Description</p>
+                                }
+
+                                @if (totalSubTasks > 0)
+                                {
+                                    <div class="d-flex align-items-center gap-1 mb-2 text-nord-dim small" style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-list-check"></i>
+                                        <span>Subtasks: @doneSubTasks / @totalSubTasks</span>
+                                    </div>
+                                }
+
+                                @if (currentCard.Labels.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                        @foreach (var label in currentCard.Labels)
+                                        {
+                                            <span class="badge text-white" style="background-color: @label.ColorHex; font-size: 0.68rem;">
+                                                @label.Name
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- READ-ONLY DETAILS MODAL (SUBTASKS PER KOLOM INZIEN) -->
+@if (_showDetailsModal && _selectedCard != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-nord shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-nord-snow">
+                        <i class="fa-solid fa-circle-info me-2 text-nord-ice"></i>@_selectedCard.Title
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="() => _showDetailsModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small uppercase fw-bold">Beschrijving / Acceptatiecriteria</label>
+                        <p class="text-nord-snow p-3 bg-nord-dark rounded border border-nord">
+                            @(string.IsNullOrWhiteSpace(_selectedCard.Description) ? "Geen beschrijving opgegeven." : _selectedCard.Description)
+                        </p>
+                    </div>
+
+                    <!-- SUBTASKS KANBAN OVERZICHT (READ ONLY) -->
+                    <div class="mb-3 p-3 bg-nord-dark rounded border border-nord">
+                        <label class="form-label fw-bold text-nord-snow mb-2">
+                            <i class="fa-solid fa-list-check me-1 text-nord-ice"></i> Subtasks Workflow (Todo, Testing, Done)
+                        </label>
+
+                        <div class="row g-2">
+                            <!-- TODO KOLOM -->
+                            <div class="col-md-4">
+                                <div class="p-2 bg-nord-card rounded border border-nord h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-nord">
+                                        <span class="small fw-bold text-uppercase" style="color: #4c566a;">Todo</span>
+                                        <span class="badge bg-secondary rounded-pill" style="font-size: 0.65rem;">@_selectedCard.SubTasks.Count(st => st.Status == SubTaskStatus.Todo)</span>
+                                    </div>
+                                    <div class="d-flex flex-column gap-2" style="min-height: 80px; max-height: 180px; overflow-y: auto;">
+                                        @foreach (var st in _selectedCard.SubTasks.Where(st => st.Status == SubTaskStatus.Todo))
+                                        {
+                                            <div class="p-2 bg-nord-dark rounded border border-nord">
+                                                <span class="text-nord-snow small text-break">@st.Title</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TESTING KOLOM -->
+                            <div class="col-md-4">
+                                <div class="p-2 bg-nord-card rounded border border-nord h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-nord">
+                                        <span class="small fw-bold text-uppercase" style="color: #b48ead;">Testing</span>
+                                        <span class="badge bg-secondary rounded-pill" style="font-size: 0.65rem;">@_selectedCard.SubTasks.Count(st => st.Status == SubTaskStatus.Testing)</span>
+                                    </div>
+                                    <div class="d-flex flex-column gap-2" style="min-height: 80px; max-height: 180px; overflow-y: auto;">
+                                        @foreach (var st in _selectedCard.SubTasks.Where(st => st.Status == SubTaskStatus.Testing))
+                                        {
+                                            <div class="p-2 bg-nord-dark rounded border border-nord">
+                                                <span class="text-nord-snow small text-break">@st.Title</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- DONE KOLOM -->
+                            <div class="col-md-4">
+                                <div class="p-2 bg-nord-card rounded border border-nord h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-nord">
+                                        <span class="small fw-bold text-uppercase" style="color: #a3be8c;">Done</span>
+                                        <span class="badge bg-secondary rounded-pill" style="font-size: 0.65rem;">@_selectedCard.SubTasks.Count(st => st.Status == SubTaskStatus.Done)</span>
+                                    </div>
+                                    <div class="d-flex flex-column gap-2" style="min-height: 80px; max-height: 180px; overflow-y: auto;">
+                                        @foreach (var st in _selectedCard.SubTasks.Where(st => st.Status == SubTaskStatus.Done))
+                                        {
+                                            <div class="p-2 bg-nord-dark rounded border border-nord">
+                                                <span class="text-decoration-line-through text-nord-dim small text-break">@st.Title</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LABELS -->
+                    @if (_selectedCard.Labels.Any())
+                    {
+                        <div class="mb-2">
+                            <label class="form-label text-muted small uppercase fw-bold">Labels</label>
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach (var label in _selectedCard.Labels)
+                                {
+                                    <span class="badge text-white" style="background-color: @label.ColorHex;">
+                                        @label.Name
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer border-nord">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="() => _showDetailsModal = false">Sluiten</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid BoardId { get; set; }
+
+    private KanbanBoardDto? _board;
+    private List<KanbanCardDto> _cards = [];
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    // Modal state voor details
+    private bool _showDetailsModal;
+    private KanbanCardDto? _selectedCard;
+
+    private record ColumnDef(KanbanColumnStatus Status, string Title, string HeaderColor);
+    private readonly List<ColumnDef> _columns =
+    [
+        new(KanbanColumnStatus.Backlog, "Backlog", "#4c566a"),
+        new(KanbanColumnStatus.CurrentSprint, "Current Sprint", "#88c0d0"),
+        new(KanbanColumnStatus.Ongoing, "Ongoing", "#ebcb8b"),
+        new(KanbanColumnStatus.Testing, "Testing", "#b48ead"),
+        new(KanbanColumnStatus.Done, "Done", "#a3be8c"),
+        new(KanbanColumnStatus.OnHold, "On Hold", "#bf616a")
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _board = await Http.GetFromJsonAsync<KanbanBoardDto>($"api/boards/shared/{BoardId}");
+            if (_board != null)
+            {
+                _cards = await Http.GetFromJsonAsync<List<KanbanCardDto>>($"api/flowboard/shared/{BoardId}") ?? [];
+            }
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Dit bord kon niet worden geladen. Controleer of de openbare link juist is of dat de eigenaar de openbare status heeft uitgeschakeld.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenCardDetailsModal(KanbanCardDto card)
+    {
+        _selectedCard = card;
+        _showDetailsModal = true;
+    }
+}

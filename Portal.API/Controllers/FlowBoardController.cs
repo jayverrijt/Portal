@@ -86,6 +86,56 @@ public class FlowBoardController : ControllerBase
         return Ok(dtos);
     }
 
+    // --- PUBLIEKE ENDPOINT VOOR GASTEN (READ-ONLY) ---
+    [HttpGet("shared/{boardId:guid}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<KanbanCardDto>>> GetSharedBoardCards(Guid boardId)
+    {
+        var board = await _context.KanbanBoards
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == boardId);
+
+        if (board == null || !board.IsPublic)
+            return NotFound(new { message = "Dit bord is niet openbaar of bestaat niet." });
+
+        var cards = await _context.KanbanCards
+            .Where(c => c.BoardId == boardId)
+            .Include(c => c.Labels)
+            .Include(c => c.SubTasks)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var dtos = cards.Select(c => new KanbanCardDto
+        {
+            Id = c.Id,
+            Title = c.Title,
+            Description = c.Description,
+            Status = c.Status,
+            SprintNumber = c.SprintNumber,
+            MoscowPriority = c.MoscowPriority,
+            BoardId = c.BoardId,
+            DueDate = c.DueDate,
+            CreatedAt = c.CreatedAt,
+            UpdatedAt = c.UpdatedAt,
+            Labels = c.Labels.Select(l => new BoardLabelDto
+            {
+                Id = l.Id,
+                Name = l.Name,
+                ColorHex = l.ColorHex,
+                BoardId = l.BoardId
+            }).ToList(),
+            SubTasks = c.SubTasks.Select(st => new SubTaskDto
+            {
+                Id = st.Id,
+                Title = st.Title,
+                Status = st.Status,
+                CardId = st.CardId
+            }).ToList()
+        });
+
+        return Ok(dtos);
+    }
+
     [HttpPost]
     public async Task<ActionResult<KanbanCardDto>> CreateCard([FromBody] CreateKanbanCardDto dto)
     {
@@ -208,7 +258,6 @@ public class FlowBoardController : ControllerBase
         card.DueDate = dto.DueDate;
         card.UpdatedAt = DateTime.UtcNow;
 
-        // Labels bijwerken
         card.Labels.Clear();
         if (dto.LabelIds.Any())
         {
@@ -325,7 +374,6 @@ public class FlowBoardController : ControllerBase
         if (!await UserHasBoardAccess(subTask.Card.BoardId, currentUserId))
             return StatusCode(StatusCodes.Status403Forbidden);
 
-        // Zowel de titel als de status correct bijwerken
         if (!string.IsNullOrWhiteSpace(dto.Title))
         {
             subTask.Title = dto.Title.Trim();

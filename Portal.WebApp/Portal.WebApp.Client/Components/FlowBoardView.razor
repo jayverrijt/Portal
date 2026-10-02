@@ -1,6 +1,7 @@
 @using System.Net.Http.Json
 @using Portal.Domain.Enums
 @using Portal.DTOs.Kanban
+@inject NavigationManager Navigation
 @inject HttpClient Http
 
 <div class="flowboard-container">
@@ -21,6 +22,12 @@
             </div>
 
             <div class="d-flex gap-2">
+                @if (_activeBoardId != Guid.Empty)
+                {
+                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="OpenShareModal">
+                        <i class="fa-solid fa-share-nodes me-1"></i> Delen & Link
+                    </button>
+                }
                 <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => _showLabelModal = true">
                     <i class="fa-solid fa-tags me-1"></i> Labels Beheren
                 </button>
@@ -57,41 +64,42 @@
                      ondragover="event.preventDefault();"
                      @ondrop="() => HandleDrop(col.Status)">
 
-                    @foreach (var card in columnCards)
+                    @foreach (var itemCard in columnCards)
                     {
-                        var doneSubTasks = card.SubTasks.Count(st => st.Status == SubTaskStatus.Done);
-                        var totalSubTasks = card.SubTasks.Count;
+                        var currentCard = itemCard;
+                        var doneSubTasks = currentCard.SubTasks.Count(st => st.Status == SubTaskStatus.Done);
+                        var totalSubTasks = currentCard.SubTasks.Count;
 
                         <div class="flowboard-card card p-3 shadow-sm cursor-pointer position-relative user-select-none"
                              draggable="true"
-                             @ondragstart="() => _draggedCard = card"
-                             @onclick="() => OpenEditCardModal(card)">
+                             @ondragstart="() => _draggedCard = currentCard"
+                             @onclick="() => OpenEditCardModal(currentCard)">
 
                             <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
-                                <h6 class="fw-bold m-0 text-nord-snow text-truncate flex-grow-1" title="@card.Title">@card.Title</h6>
+                                <h6 class="fw-bold m-0 text-nord-snow text-truncate flex-grow-1" title="@currentCard.Title">@currentCard.Title</h6>
                                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                                    @if (card.MoscowPriority.HasValue)
+                                    @if (currentCard.MoscowPriority.HasValue)
                                     {
                                         <span class="badge bg-nord-surface border border-nord text-nord-ice" style="font-size: 0.65rem;">
-                                            @card.MoscowPriority.Value.ToString()
+                                            @currentCard.MoscowPriority.Value.ToString()
                                         </span>
                                     }
-                                    @if (card.SprintNumber.HasValue)
+                                    @if (currentCard.SprintNumber.HasValue)
                                     {
                                         <span class="badge border border-nord text-nord-snow bg-nord-dark small" style="font-size: 0.7rem;">
-                                            @($"S{card.SprintNumber.Value}")
+                                            @($"S{currentCard.SprintNumber.Value}")
                                         </span>
                                     }
-                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" style="font-size: 0.7rem; height: 22px;" title="Use Case bewerken" @onclick="() => OpenEditCardModal(card)" @onclick:stopPropagation="true">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" style="font-size: 0.7rem; height: 22px;" title="Use Case bewerken" @onclick="() => OpenEditCardModal(currentCard)" @onclick:stopPropagation="true">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
                                 </div>
                             </div>
 
-                            @if (!string.IsNullOrWhiteSpace(card.Description))
+                            @if (!string.IsNullOrWhiteSpace(currentCard.Description))
                             {
                                 <p class="small text-nord-dim mb-2 text-break" style="max-height: 60px; overflow: hidden;">
-                                    @card.Description
+                                    @currentCard.Description
                                 </p>
                             }
 
@@ -105,10 +113,10 @@
                             }
 
                             <!-- LABELS -->
-                            @if (card.Labels.Any())
+                            @if (currentCard.Labels.Any())
                             {
                                 <div class="d-flex flex-wrap gap-1 mb-2">
-                                    @foreach (var label in card.Labels)
+                                    @foreach (var label in currentCard.Labels)
                                     {
                                         <span class="badge text-white" style="background-color: @label.ColorHex; font-size: 0.68rem;">
                                             @label.Name
@@ -120,13 +128,13 @@
                             <!-- FOOTER -->
                             <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-nord" @onclick:stopPropagation="true">
                                 <small class="text-nord-dim" style="font-size: 0.7rem;">
-                                    @(card.DueDate.HasValue ? $"📅 {card.DueDate.Value.ToLocalTime():dd MMM}" : "")
+                                    @(currentCard.DueDate.HasValue ? $"📅 {currentCard.DueDate.Value.ToLocalTime():dd MMM}" : "")
                                 </small>
 
                                 <select class="form-select form-select-sm py-0 px-2"
                                         style="font-size: 0.75rem; height: 26px; width: auto;"
-                                        value="@card.Status"
-                                        @onchange="(e) => OnStatusDropdownChanged(card, e)">
+                                        value="@currentCard.Status"
+                                        @onchange="(e) => OnStatusDropdownChanged(currentCard, e)">
                                     @foreach (var targetCol in _columns)
                                     {
                                         <option value="@targetCol.Status">@targetCol.Title</option>
@@ -144,6 +152,114 @@
         }
     </div>
 </div>
+
+<!-- MODAL: FLOWBOARD DELEN & PUBLIEKE SWITCH -->
+@if (_showShareModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.65); backdrop-filter: blur(2px); z-index: 1065;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-nord shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-nord-snow">
+                        <i class="fa-solid fa-share-nodes me-2 text-nord-ice"></i>FlowBoard Delen & Toegang
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="() => _showShareModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_shareModalErrorMessage))
+                    {
+                        <div class="alert alert-danger py-2 px-3 small mb-3 border-0 text-nord-snow rounded-2" role="alert">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> @_shareModalErrorMessage
+                        </div>
+                    }
+
+                    <!-- OPENBARE LINK SWITCH -->
+                    <div class="mb-4 p-3 bg-nord-dark rounded border border-nord">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <label class="form-label text-nord-snow small fw-semibold mb-0">Openbare Toegang (Geen Login Nodig)</label>
+                                <p class="text-nord-dim small mb-0">Maak het bord openbaar zodat iedereen met de link het kan inzien (Read-Only).</p>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" checked="@_isPublic" @onchange="TogglePublicAccess" />
+                            </div>
+                        </div>
+
+                        @if (_isPublic)
+                        {
+                            <div class="input-group mt-3">
+                                <input type="text" class="form-control form-control-sm text-muted" readonly value="@GetShareableLink()" />
+                                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CopyShareableLink">
+                                    <i class="fa-solid fa-copy me-1"></i> @(_linkCopied ? "Gekopieerd!" : "Kopiëren")
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- DIRECT DELEN VIA E-MAIL -->
+                    <div class="mb-4">
+                        <label class="form-label text-nord-snow small fw-semibold">Nieuw account machtigen via e-mail</label>
+                        <div class="input-group">
+                            <input type="email" class="form-control" placeholder="collega@domein.nl" @bind="_shareUserEmail" />
+                            <button type="button" class="btn btn-primary" @onclick="ExecuteShareBoard" disabled="@_isSharing">
+                                @if (_isSharing)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-user-plus me-1"></i>
+                                }
+                                <span>Delen</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ACTIEVE DEELNEMERS -->
+                    <div>
+                        <h6 class="text-uppercase text-nord-dim fw-bold small mb-2">Actieve Deelnemers (@_sharedMembers.Count)</h6>
+                        @if (_isLoadingMembers)
+                        {
+                            <div class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-nord-ice" role="status"></div>
+                                <span class="ms-2 small text-nord-dim">Leden ophalen...</span>
+                            </div>
+                        }
+                        else if (!_sharedMembers.Any())
+                        {
+                            <div class="p-3 bg-nord-dark rounded border border-nord text-center">
+                                <p class="text-nord-dim small mb-0 fst-italic">Dit bord is nog niet gedeeld met specifieke accounts.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="list-group list-group-flush rounded border border-nord" style="max-height: 150px; overflow-y: auto;">
+                                @foreach (var member in _sharedMembers)
+                                {
+                                    <div class="list-group-item bg-nord-dark border-nord d-flex justify-content-between align-items-center py-2 px-3">
+                                        <div class="d-flex align-items-center gap-2 text-truncate pe-2">
+                                            <i class="fa-solid fa-user text-nord-ice small"></i>
+                                            <span class="text-nord-snow small text-truncate">@member.Email</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 flex-shrink-0"
+                                                title="Toegang direct intrekken"
+                                                @onclick="() => RevokeShare(member.Id)"
+                                                disabled="@_isRevoking">
+                                            <i class="fa-solid fa-user-minus me-1"></i> Intrekken
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer border-nord">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="() => _showShareModal = false">Sluiten</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <!-- USE CASE BEWERK / MAAK MODAL -->
 @if (_showCardModal)
@@ -197,7 +313,7 @@
                         </div>
                     </div>
 
-                    <!-- SUBTASKS KANBAN SECTIE (3 KOLOMMEN: TODO, TESTING, DONE) -->
+                    <!-- SUBTASKS KANBAN SECTIE -->
                     <div class="mb-3 p-3 bg-nord-dark rounded border border-nord">
                         <label class="form-label fw-bold text-nord-snow mb-2">
                             <i class="fa-solid fa-list-check me-1 text-nord-ice"></i> Subtasks Workflow (Todo, Testing, Done)
@@ -225,25 +341,26 @@
                                         <span class="badge bg-secondary rounded-pill" style="font-size: 0.65rem;">@_currentSubTasks.Count(st => st.Status == SubTaskStatus.Todo)</span>
                                     </div>
                                     <div class="d-flex flex-column gap-2" style="min-height: 80px; max-height: 180px; overflow-y: auto;">
-                                        @foreach (var st in _currentSubTasks.Where(st => st.Status == SubTaskStatus.Todo))
+                                        @foreach (var subTaskItem in _currentSubTasks.Where(st => st.Status == SubTaskStatus.Todo))
                                         {
+                                            var currentSubTask = subTaskItem;
                                             <div class="p-2 bg-nord-dark rounded border border-nord d-flex justify-content-between align-items-start">
-                                                @if (_editingSubTaskId == st.Id)
+                                                @if (_editingSubTaskId == currentSubTask.Id)
                                                 {
-                                                    <input type="text" class="form-control form-control-sm me-1 flex-grow-1" @bind="st.Title" @onblur="() => SaveSubTaskEdit(st)" autofocus />
+                                                    <input type="text" class="form-control form-control-sm me-1 flex-grow-1" @bind="currentSubTask.Title" @onblur="() => SaveSubTaskEdit(currentSubTask)" autofocus />
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-nord-snow small text-break pe-2 flex-grow-1" title="@st.Title">@st.Title</span>
+                                                    <span class="text-nord-snow small text-break pe-2 flex-grow-1" title="@currentSubTask.Title">@currentSubTask.Title</span>
                                                 }
                                                 <div class="d-flex gap-1 flex-shrink-0 align-self-start">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Bewerken" @onclick="() => ToggleSubTaskEdit(st.Id)">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Bewerken" @onclick="() => ToggleSubTaskEdit(currentSubTask.Id)">
                                                         <i class="fa-solid fa-pen"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Verplaats naar Testing" @onclick="() => MoveSubTaskStatus(st, SubTaskStatus.Testing)">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Verplaats naar Testing" @onclick="() => MoveSubTaskStatus(currentSubTask, SubTaskStatus.Testing)">
                                                         <i class="fa-solid fa-arrow-right"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size: 0.65rem;" title="Verwijderen" @onclick="() => DeleteSubTask(st.Id)">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size: 0.65rem;" title="Verwijderen" @onclick="() => DeleteSubTask(currentSubTask.Id)">
                                                         <i class="fa-solid fa-xmark"></i>
                                                     </button>
                                                 </div>
@@ -261,28 +378,29 @@
                                         <span class="badge bg-secondary rounded-pill" style="font-size: 0.65rem;">@_currentSubTasks.Count(st => st.Status == SubTaskStatus.Testing)</span>
                                     </div>
                                     <div class="d-flex flex-column gap-2" style="min-height: 80px; max-height: 180px; overflow-y: auto;">
-                                        @foreach (var st in _currentSubTasks.Where(st => st.Status == SubTaskStatus.Testing))
+                                        @foreach (var subTaskItem in _currentSubTasks.Where(st => st.Status == SubTaskStatus.Testing))
                                         {
+                                            var currentSubTask = subTaskItem;
                                             <div class="p-2 bg-nord-dark rounded border border-nord d-flex justify-content-between align-items-start">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 flex-shrink-0 align-self-start me-1" style="font-size: 0.65rem;" title="Terug naar Todo" @onclick="() => MoveSubTaskStatus(st, SubTaskStatus.Todo)">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 flex-shrink-0 align-self-start me-1" style="font-size: 0.65rem;" title="Terug naar Todo" @onclick="() => MoveSubTaskStatus(currentSubTask, SubTaskStatus.Todo)">
                                                     <i class="fa-solid fa-arrow-left"></i>
                                                 </button>
-                                                @if (_editingSubTaskId == st.Id)
+                                                @if (_editingSubTaskId == currentSubTask.Id)
                                                 {
-                                                    <input type="text" class="form-control form-control-sm mx-1 flex-grow-1" @bind="st.Title" @onblur="() => SaveSubTaskEdit(st)" autofocus />
+                                                    <input type="text" class="form-control form-control-sm mx-1 flex-grow-1" @bind="currentSubTask.Title" @onblur="() => SaveSubTaskEdit(currentSubTask)" autofocus />
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-nord-snow small text-break px-1 flex-grow-1" title="@st.Title">@st.Title</span>
+                                                    <span class="text-nord-snow small text-break px-1 flex-grow-1" title="@currentSubTask.Title">@currentSubTask.Title</span>
                                                 }
                                                 <div class="d-flex gap-1 flex-shrink-0 align-self-start">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Bewerken" @onclick="() => ToggleSubTaskEdit(st.Id)">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Bewerken" @onclick="() => ToggleSubTaskEdit(currentSubTask.Id)">
                                                         <i class="fa-solid fa-pen"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Verplaats naar Done" @onclick="() => MoveSubTaskStatus(st, SubTaskStatus.Done)">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Verplaats naar Done" @onclick="() => MoveSubTaskStatus(currentSubTask, SubTaskStatus.Done)">
                                                         <i class="fa-solid fa-arrow-right"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size: 0.65rem;" title="Verwijderen" @onclick="() => DeleteSubTask(st.Id)">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size: 0.65rem;" title="Verwijderen" @onclick="() => DeleteSubTask(currentSubTask.Id)">
                                                         <i class="fa-solid fa-xmark"></i>
                                                     </button>
                                                 </div>
@@ -300,25 +418,26 @@
                                         <span class="badge bg-secondary rounded-pill" style="font-size: 0.65rem;">@_currentSubTasks.Count(st => st.Status == SubTaskStatus.Done)</span>
                                     </div>
                                     <div class="d-flex flex-column gap-2" style="min-height: 80px; max-height: 180px; overflow-y: auto;">
-                                        @foreach (var st in _currentSubTasks.Where(st => st.Status == SubTaskStatus.Done))
+                                        @foreach (var subTaskItem in _currentSubTasks.Where(st => st.Status == SubTaskStatus.Done))
                                         {
+                                            var currentSubTask = subTaskItem;
                                             <div class="p-2 bg-nord-dark rounded border border-nord d-flex justify-content-between align-items-start">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 flex-shrink-0 align-self-start me-1" style="font-size: 0.65rem;" title="Terug naar Testing" @onclick="() => MoveSubTaskStatus(st, SubTaskStatus.Testing)">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 flex-shrink-0 align-self-start me-1" style="font-size: 0.65rem;" title="Terug naar Testing" @onclick="() => MoveSubTaskStatus(currentSubTask, SubTaskStatus.Testing)">
                                                     <i class="fa-solid fa-arrow-left"></i>
                                                 </button>
-                                                @if (_editingSubTaskId == st.Id)
+                                                @if (_editingSubTaskId == currentSubTask.Id)
                                                 {
-                                                    <input type="text" class="form-control form-control-sm mx-1 flex-grow-1" @bind="st.Title" @onblur="() => SaveSubTaskEdit(st)" autofocus />
+                                                    <input type="text" class="form-control form-control-sm mx-1 flex-grow-1" @bind="currentSubTask.Title" @onblur="() => SaveSubTaskEdit(currentSubTask)" autofocus />
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-decoration-line-through text-nord-dim small text-break px-1 flex-grow-1" title="@st.Title">@st.Title</span>
+                                                    <span class="text-decoration-line-through text-nord-dim small text-break px-1 flex-grow-1" title="@currentSubTask.Title">@currentSubTask.Title</span>
                                                 }
                                                 <div class="d-flex gap-1 flex-shrink-0 align-self-start">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Bewerken" @onclick="() => ToggleSubTaskEdit(st.Id)">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.65rem;" title="Bewerken" @onclick="() => ToggleSubTaskEdit(currentSubTask.Id)">
                                                         <i class="fa-solid fa-pen"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 flex-shrink-0" style="font-size: 0.65rem;" title="Verwijderen" @onclick="() => DeleteSubTask(st.Id)">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 flex-shrink-0" style="font-size: 0.65rem;" title="Verwijderen" @onclick="() => DeleteSubTask(currentSubTask.Id)">
                                                         <i class="fa-solid fa-xmark"></i>
                                                     </button>
                                                 </div>
@@ -415,6 +534,17 @@
     private string? _errorMessage;
     private int _selectedSprintFilter = -1;
 
+    // Share Modal States
+    private bool _showShareModal;
+    private bool _isPublic;
+    private string _shareUserEmail = string.Empty;
+    private string? _shareModalErrorMessage;
+    private bool _isSharing;
+    private bool _isLoadingMembers;
+    private bool _isRevoking;
+    private bool _linkCopied;
+    private List<BoardMemberViewDto> _sharedMembers = new();
+
     // Modal States
     private bool _showCardModal;
     private bool _isEditingCard;
@@ -435,15 +565,15 @@
     private string _newLabelColor = "#88c0d0";
 
     private record ColumnDef(KanbanColumnStatus Status, string Title, string HeaderColor);
-    private readonly List<ColumnDef> _columns = new()
-    {
+    private readonly List<ColumnDef> _columns =
+    [
         new(KanbanColumnStatus.Backlog, "Backlog", "#4c566a"),
         new(KanbanColumnStatus.CurrentSprint, "Current Sprint", "#88c0d0"),
         new(KanbanColumnStatus.Ongoing, "Ongoing", "#ebcb8b"),
         new(KanbanColumnStatus.Testing, "Testing", "#b48ead"),
         new(KanbanColumnStatus.Done, "Done", "#a3be8c"),
         new(KanbanColumnStatus.OnHold, "On Hold", "#bf616a")
-    };
+    ];
 
     protected override async Task OnParametersSetAsync()
     {
@@ -462,7 +592,7 @@
     {
         try
         {
-            var boards = await Http.GetFromJsonAsync<List<KanbanBoardDto>>($"api/boards?projectId={projId}") ?? new();
+            var boards = await Http.GetFromJsonAsync<List<KanbanBoardDto>>($"api/boards?projectId={projId}") ?? [];
             var board = boards.FirstOrDefault();
             if (board == null)
             {
@@ -493,13 +623,138 @@
     {
         try
         {
-            _allCards = await Http.GetFromJsonAsync<List<KanbanCardDto>>($"api/flowboard?boardId={_activeBoardId}") ?? new();
-            _availableLabels = await Http.GetFromJsonAsync<List<BoardLabelDto>>($"api/boardlabels?boardId={_activeBoardId}") ?? new();
+            _allCards = await Http.GetFromJsonAsync<List<KanbanCardDto>>($"api/flowboard?boardId={_activeBoardId}") ?? [];
+            _availableLabels = await Http.GetFromJsonAsync<List<BoardLabelDto>>($"api/boardlabels?boardId={_activeBoardId}") ?? [];
             ApplyFilter();
         }
         catch (Exception ex)
         {
             _errorMessage = $"Fout bij laden kaarten: {ex.Message}";
+        }
+    }
+
+    private string GetShareableLink()
+    {
+        return $"{Navigation.BaseUri}shared-board/{_activeBoardId}";
+    }
+
+    private async Task CopyShareableLink()
+    {
+        _linkCopied = true;
+        StateHasChanged();
+        await Task.Delay(2500);
+        _linkCopied = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenShareModal()
+    {
+        _showShareModal = true;
+        _shareUserEmail = string.Empty;
+        _shareModalErrorMessage = null;
+        _linkCopied = false;
+
+        try
+        {
+            var boardDto = await Http.GetFromJsonAsync<KanbanBoardDto>($"api/boards/{_activeBoardId}");
+            if (boardDto != null)
+            {
+                _isPublic = boardDto.IsPublic;
+            }
+        }
+        catch
+        {
+            // Ignored if fetch fails
+        }
+
+        await LoadMembers();
+    }
+
+    private async Task TogglePublicAccess(ChangeEventArgs e)
+    {
+        var newState = (bool)(e.Value ?? false);
+        _isPublic = newState;
+
+        try
+        {
+            await Http.PatchAsJsonAsync($"api/boards/{_activeBoardId}/public", new { IsPublic = newState });
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout bij bijwerken openbare status: {ex.Message}";
+        }
+    }
+
+    private async Task LoadMembers()
+    {
+        _isLoadingMembers = true;
+        try
+        {
+            _sharedMembers = await Http.GetFromJsonAsync<List<BoardMemberViewDto>>($"api/boards/{_activeBoardId}/members") ?? [];
+        }
+        catch
+        {
+            _sharedMembers = [];
+        }
+        finally
+        {
+            _isLoadingMembers = false;
+        }
+    }
+
+    private async Task ExecuteShareBoard()
+    {
+        if (string.IsNullOrWhiteSpace(_shareUserEmail))
+        {
+            _shareModalErrorMessage = "Vul een e-mailadres in.";
+            return;
+        }
+
+        _isSharing = true;
+        _shareModalErrorMessage = null;
+        try
+        {
+            var payload = new { Email = _shareUserEmail.Trim() };
+            var response = await Http.PostAsJsonAsync($"api/boards/{_activeBoardId}/share", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                _shareUserEmail = string.Empty;
+                await LoadMembers();
+            }
+            else
+            {
+                _shareModalErrorMessage = "Kan bord niet delen met dit e-mailadres.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _shareModalErrorMessage = $"Verbindingsfout: {ex.Message}";
+        }
+        finally
+        {
+            _isSharing = false;
+        }
+    }
+
+    private async Task RevokeShare(string userId)
+    {
+        _isRevoking = true;
+        _shareModalErrorMessage = null;
+        try
+        {
+            var response = await Http.DeleteAsync($"api/boards/{_activeBoardId}/share/{userId}");
+            if (response.IsSuccessStatusCode)
+            {
+                _sharedMembers.RemoveAll(m => m.Id == userId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _shareModalErrorMessage = $"Verbindingsfout: {ex.Message}";
+        }
+        finally
+        {
+            _isRevoking = false;
         }
     }
 
@@ -703,5 +958,12 @@
             _newLabelName = string.Empty;
             await LoadBoardData();
         }
+    }
+
+    public class BoardMemberViewDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
     }
 }

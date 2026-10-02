@@ -5,6 +5,7 @@ public class KanbanBoardDto
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public bool IsPublic { get; set; }
     public Guid? ProjectId { get; set; }
     public DateTime CreatedAt { get; set; }
     public int CardCount { get; set; }

@@ -3,6 +3,7 @@
 @using System.Net.Http.Json
 @using Microsoft.AspNetCore.Authorization
 @using Portal.DTOs.Kanban
+@using Portal.DTOs.Projects
 @using Portal.WebApp.Client.Components
 @inject HttpClient Http
 
@@ -16,7 +17,7 @@
                 <i class="fa-solid fa-arrow-left me-1"></i> Terug naar alle Borden
             </button>
             <h2 class="fw-bold m-0 text-nord-snow">@_selectedBoard.Title</h2>
-            <p class="text-nord-dim m-0">@(_selectedBoard.Description ?? "Standalone Use Case Workflow")</p>
+            <p class="text-nord-dim m-0">@(_selectedBoard.Description ?? "Use Case Workflow")</p>
         </div>
     </div>
 
@@ -27,7 +28,7 @@ else
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold m-0 text-nord-snow">Use Case FlowBoard Hub</h2>
-            <p class="text-nord-dim m-0">Beheer al je losse Trello/Kanban borden voor Use Cases, Sprints en Subtasks</p>
+            <p class="text-nord-dim m-0">Beheer al je losse en gekoppelde Trello/Kanban borden voor Use Cases, Sprints en Subtasks</p>
         </div>
         <button type="button" class="btn btn-primary" @onclick="() => _showCreateBoardModal = true">
             <i class="fa-solid fa-plus me-1"></i> Nieuw Bord Aanmaken
@@ -49,8 +50,8 @@ else
     else if (!_boards.Any())
     {
         <div class="card card-body text-center py-5 bg-nord-dark border-nord">
-            <h5 class="text-nord-snow">Nog geen losse FlowBoards aanwezig</h5>
-            <p class="text-nord-dim small">Maak een bord aan om te beginnen (bijv. "Semester 3 Use Cases").</p>
+            <h5 class="text-nord-snow">Nog geen FlowBoards aanwezig</h5>
+            <p class="text-nord-dim small">Maak een bord aan of koppel er een aan je project om te beginnen.</p>
             <div>
                 <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => _showCreateBoardModal = true">
                     <i class="fa-solid fa-plus me-1"></i> Eerste Bord Maken
@@ -136,7 +137,49 @@ else
         _errorMessage = null;
         try
         {
-            _boards = await Http.GetFromJsonAsync<List<KanbanBoardDto>>("api/boards") ?? new();
+            var allBoardsMap = new Dictionary<Guid, KanbanBoardDto>();
+
+            // 1. Haal alle projecten op zodat we projectnamen/beschrijvingen kunnen mappen
+            var projects = await Http.GetFromJsonAsync<List<ProjectDto>>("api/project") ?? new();
+            var projectDict = projects.ToDictionary(p => p.Id);
+
+            // 2. Haal losse (standalone) borden op
+            var standaloneBoards = await Http.GetFromJsonAsync<List<KanbanBoardDto>>("api/boards") ?? new();
+            foreach (var b in standaloneBoards)
+            {
+                allBoardsMap[b.Id] = b;
+            }
+
+            // 3. Haal per project de gekoppelde boards op en neem indien nodig projectnaam/beschrijving over
+            foreach (var proj in projects)
+            {
+                try
+                {
+                    var projBoards = await Http.GetFromJsonAsync<List<KanbanBoardDto>>($"api/boards?projectId={proj.Id}") ?? new();
+                    foreach (var pb in projBoards)
+                    {
+                        // Als het bord een generieke titel heeft, neem de projectnaam over
+                        if (string.IsNullOrWhiteSpace(pb.Title) || pb.Title == "Project FlowBoard" || pb.Title == "Use Cases")
+                        {
+                            pb.Title = proj.Title;
+                        }
+
+                        // Als de beschrijving leeg is of de generieke tekst bevat, neem de projectbeschrijving over
+                        if (string.IsNullOrWhiteSpace(pb.Description) || pb.Description == "Automatisch aangemaakt bord")
+                        {
+                            pb.Description = proj.Description;
+                        }
+
+                        allBoardsMap[pb.Id] = pb;
+                    }
+                }
+                catch
+                {
+                    // Negeer eventuele fouten per project
+                }
+            }
+
+            _boards = allBoardsMap.Values.OrderByDescending(b => b.CreatedAt).ToList();
         }
         catch (Exception ex)
         {
